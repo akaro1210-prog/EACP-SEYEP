@@ -61,48 +61,44 @@ def render():
         key=f"txt_2759_{ver}"
     )
 
-    up_2759 = st.file_uploader(
-        f"Figura 1: 'Proteccion27-59.png' ({estado_archivo('Proteccion27-59.png')})",
-        type=["png", "jpg", "jpeg"],
-        key=f"up_prot_2759_{ver}"
+    incluir_img_2759 = st.checkbox(
+        "✅ Incluir figura 'Proteccion27-59.png' (Verificación ajustes ANSI 27/59 con curvas HVRT y LVRT)",
+        value=bool(obtener_val("incluir_img_2759", True)),
+        key=f"chk_img_2759_{ver}"
     )
-    if guardar_archivo_subido(up_2759, "Proteccion27-59.png"):
-        st.success("✅ Proteccion27-59.png guardada.")
+
+    if incluir_img_2759:
+        up_2759 = st.file_uploader(
+            f"Figura: 'Proteccion27-59.png' ({estado_archivo('Proteccion27-59.png')})",
+            type=["png", "jpg", "jpeg"],
+            key=f"up_prot_2759_{ver}"
+        )
+        if guardar_archivo_subido(up_2759, "Proteccion27-59.png"):
+            st.success("✅ Proteccion27-59.png guardada.")
+    else:
+        st.caption("ℹ️ La figura 'Proteccion27-59.png' no se incluirá en el informe PDF.")
 
     # ================= 1.3 PROTECCIÓN 59N =================
     st.markdown("---")
     st.markdown("### 1.3 Cálculos para la protección 59N (`\\tablatresVcero`)")
-    st.caption("Edita los valores de la tabla de tensión residual 3V0 y las variables enlazadas en el párrafo de análisis:")
+    
+    incluir_sec_59n = st.checkbox(
+        "✅ Incluir sección 1.3: Cálculos para la protección 59N en el informe",
+        value=bool(obtener_val("incluir_sec_59n", True)),
+        key=f"chk_sec_59n_{ver}"
+    )
 
     df_3v0_default = pd.DataFrame([
         {"Impedancia de falla [ohms]": "0", "3V0 [kV]": "10.746", "3V0 [p.u]": "1.410"},
         {"Impedancia de falla [ohms]": "5", "3V0 [kV]": "5.603", "3V0 [p.u]": "0.735"},
         {"Impedancia de falla [ohms]": "15", "3V0 [kV]": "2.842", "3V0 [p.u]": "0.373"},
     ])
-    df_tres_vcero = st.data_editor(
-        obtener_df("df_tres_vcero", df_3v0_default),
-        num_rows="dynamic",
-        use_container_width=True,
-        key=f"editor_3v0_eacp_{ver}"
-    )
-
-    c_v1, c_v2, c_v3, c_v4, c_v5 = st.columns(5)
-    with c_v1:
-        tres_vcero_mas_alta = st.text_input("\\tresVceroMASALTA (15 ohms p.u.):", value=obtener_val("tresVceroMASALTA", "0.373 p.u."), key=f"v_3v0a_{ver}")
-    with c_v2:
-        tres_vcero_mas_alta_kv = st.text_input("\\tresVceroMASALTAkV (15 ohms kV):", value=obtener_val("tresVceroMASALTAkV", "2.842 kV"), key=f"v_3v0kv_{ver}")
-    with c_v3:
-        ajuste_tres_vcero = st.text_input("\\ajustetresVcero (Umbral p.u.):", value=obtener_val("ajustetresVcero", "0.2 p.u"), key=f"v_aj3v0_{ver}")
-    with c_v4:
-        mag_ajuste_tres_vcero = st.text_input("\\magajustetresVcero (Umbral kV):", value=obtener_val("magajustetresVcero", "1.524 kV"), key=f"v_mag3v0_{ver}")
-    with c_v5:
-        tension_base_fn = st.text_input("Tensión base fase-neutro:", value=obtener_val("tension_base_fn", "7.621 kV"), key=f"v_tbfn_{ver}")
 
     texto_59n_default = (
         r"El ajuste de la función de protección contra sobretensión residual (59N) se fundamenta en un análisis técnico que evalúa "
         r"el desplazamiento del neutro bajo escenarios críticos de falla, equilibrando la sensibilidad requerida para detectar contingencias "
         r"de alta impedancia con la seguridad operativa ante desequilibrios normales del sistema. Las simulaciones de cortocircuito monofásico "
-        f"a tierra en el nivel de \\NT , donde la tensión base fase-neutro es de aproximadamente {tension_base_fn}, arrojan un comportamiento "
+        r"a tierra en el nivel de \NT , donde la tensión base fase-neutro es de aproximadamente 7.621 kV, arrojan un comportamiento "
         r"decreciente de la tensión residual a medida que aumenta la resistencia de contacto. En el escenario más desfavorable, correspondiente "
         r"a una falla de alta impedancia de 15 ohms, el sistema experimenta un desplazamiento de neutro que eleva la tensión residual a "
         r"\tresVceroMASALTA, lo que equivale a \tresVceroMASALTAkV\ primarios. Por otra parte, la definición del umbral de arranque está "
@@ -122,12 +118,44 @@ def render():
         "\n\\\\\n"
         r"Dado lo anterior, los ajustes de la función 59N es \ajustetresVcero\ de arranque con tiempo definido de 2 segundos."
     )
-    texto_59n = st.text_area(
-        "Párrafo de análisis de 59N (conserva `\\NT`, `\\tresVceroMASALTA`, `\\ajustetresVcero`, etc.):",
-        value=obtener_val("texto_59n", texto_59n_default),
-        height=200,
-        key=f"txt_59n_{ver}"
-    )
+
+    if not incluir_sec_59n:
+        st.info("🚫 La sección 1.3 (Cálculos para la protección 59N) está desactivada y se omitirá del documento PDF y de la tabla de contenido.")
+        df_tres_vcero = obtener_df("df_tres_vcero", df_3v0_default)
+        tres_vcero_mas_alta = obtener_val("tresVceroMASALTA", "0.373 p.u.")
+        tres_vcero_mas_alta_kv = obtener_val("tresVceroMASALTAkV", "2.842 kV")
+        ajuste_tres_vcero = obtener_val("ajustetresVcero", "0.2 p.u")
+        mag_ajuste_tres_vcero = obtener_val("magajustetresVcero", "1.524 kV")
+        tension_base_fn = obtener_val("tension_base_fn", "7.621 kV")
+        texto_59n = obtener_val("texto_59n", texto_59n_default)
+    else:
+        st.caption("Edita los valores de la tabla de tensión residual 3V0 y las variables enlazadas en el párrafo de análisis:")
+
+        df_tres_vcero = st.data_editor(
+            obtener_df("df_tres_vcero", df_3v0_default),
+            num_rows="dynamic",
+            use_container_width=True,
+            key=f"editor_3v0_eacp_{ver}"
+        )
+
+        c_v1, c_v2, c_v3, c_v4, c_v5 = st.columns(5)
+        with c_v1:
+            tres_vcero_mas_alta = st.text_input("\\tresVceroMASALTA (15 ohms p.u.):", value=obtener_val("tresVceroMASALTA", "0.373 p.u."), key=f"v_3v0a_{ver}")
+        with c_v2:
+            tres_vcero_mas_alta_kv = st.text_input("\\tresVceroMASALTAkV (15 ohms kV):", value=obtener_val("tresVceroMASALTAkV", "2.842 kV"), key=f"v_3v0kv_{ver}")
+        with c_v3:
+            ajuste_tres_vcero = st.text_input("\\ajustetresVcero (Umbral p.u.):", value=obtener_val("ajustetresVcero", "0.2 p.u"), key=f"v_aj3v0_{ver}")
+        with c_v4:
+            mag_ajuste_tres_vcero = st.text_input("\\magajustetresVcero (Umbral kV):", value=obtener_val("magajustetresVcero", "1.524 kV"), key=f"v_mag3v0_{ver}")
+        with c_v5:
+            tension_base_fn = st.text_input("Tensión base fase-neutro:", value=obtener_val("tension_base_fn", "7.621 kV"), key=f"v_tbfn_{ver}")
+
+        texto_59n = st.text_area(
+            "Párrafo de análisis de 59N (conserva `\\NT`, `\\tresVceroMASALTA`, `\\ajustetresVcero`, etc.):",
+            value=obtener_val("texto_59n", texto_59n_default),
+            height=200,
+            key=f"txt_59n_{ver}"
+        )
 
     # ================= 1.4 PROTECCIÓN ANTI-ISLA =================
     st.markdown("---")
@@ -209,6 +237,8 @@ def render():
     )
 
     datos = {
+        "incluir_img_2759": incluir_img_2759,
+        "incluir_sec_59n": incluir_sec_59n,
         "proteccion_tensiones_txt": proteccion_tensiones_txt,
         "df_tres_vcero": df_tres_vcero,
         "tresVceroMASALTA": tres_vcero_mas_alta,
