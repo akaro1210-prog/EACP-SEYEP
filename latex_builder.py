@@ -575,33 +575,144 @@ Para la definición del umbral de operación de la función de sobretensión de 
     bloques_recos_or.append(txt_recierre_or)
     contenido_parametros_recos_or = "\n".join(bloques_recos_or)
 
+    tipo_proteccion_principal = params.get("tipo_proteccion_principal", "Relé o Reconectador")
+    es_modo_breaker = "Breaker" in str(tipo_proteccion_principal)
+
     calc_potencia = escapar_latex(params.get("calc_potencia", "900kW"))
-    calc_tension = escapar_latex(params.get("calc_tension", "13.2kV"))
+    calc_tension = escapar_latex(params.get("calc_tension", "13.2kV" if not es_modo_breaker else "0.48kV"))
     calc_cosphi = escapar_latex(params.get("calc_cosphi", "1"))
-    calc_in_val = escapar_latex(params.get("calc_in_val", "39.36"))
+    calc_in_val = escapar_latex(params.get("calc_in_val", "39.36" if not es_modo_breaker else "1081"))
     calc_i51p_exact = escapar_latex(params.get("calc_i51p_exact", "43.296"))
     calc_i51p_aprox = escapar_latex(params.get("calc_i51p_aprox", "44"))
     calc_i51n_exact = escapar_latex(params.get("calc_i51n_exact", "15.744"))
     calc_i51n_aprox = escapar_latex(params.get("calc_i51n_aprox", "16"))
+
+    calc_factor_termico = escapar_latex(params.get("calc_factor_termico", "1.25"))
+    calc_itermica_exact = escapar_latex(params.get("calc_itermica_exact", "1351.25"))
+    calc_itermica_aprox = escapar_latex(params.get("calc_itermica_aprox", "1360"))
+    calc_factor_magnetico = escapar_latex(params.get("calc_factor_magnetico", "2.5"))
+    calc_imagnetica_exact = escapar_latex(params.get("calc_imagnetica_exact", "2702.5"))
+    calc_imagnetica_aprox = escapar_latex(params.get("calc_imagnetica_aprox", "2720"))
+
     parrafo_calculo_50 = params.get("parrafo_calculo_50", "")
+
+    caption_tabla_proy_raw = params.get("caption_tabla_proy", "")
+    if not caption_tabla_proy_raw:
+        if es_modo_breaker:
+            caption_tabla_proy = r"Ajustes de protección para el Breaker \nombreProyecto."
+        else:
+            caption_tabla_proy = r"Ajustes de protección para el Reconectador \nombreProyecto."
+    else:
+        caption_tabla_proy = caption_tabla_proy_raw
 
     df_reco_proy = params.get("df_ajustes_reco_proy", None)
     filas_reco_proy = []
     if df_reco_proy is not None and isinstance(df_reco_proy, pd.DataFrame) and not df_reco_proy.empty:
         for _, r in df_reco_proy.iterrows():
-            p1 = escapar_latex(r.get("Parámetro", ""))
-            p2 = escapar_latex(r.get("Pick Up [Aprim]", ""))
-            p3 = escapar_latex(r.get("DIAL [s]", ""))
-            p4 = escapar_latex(r.get("Curva", ""))
+            cols = list(r.index)
+            p1 = escapar_latex(r.iloc[0]) if len(cols) > 0 else ""
+            p2 = escapar_latex(r.iloc[1]) if len(cols) > 1 else ""
+            p3 = escapar_latex(r.iloc[2]) if len(cols) > 2 else ""
+            p4 = escapar_latex(r.iloc[3]) if len(cols) > 3 else ""
             filas_reco_proy.append(f"            {p1} & {p2} & {p3} & {p4} \\\\ \\hline")
     if not filas_reco_proy:
-        filas_reco_proy = [
-            "            ANSI 51 & 44 & 0,05 & IEC - EI \\\\ \\hline",
-            "            ANSI 50 & 200 & 0 & DT \\\\ \\hline",
-            "            ANSI 51N & 16 & 0,05 & IEC - NI \\\\ \\hline",
-            "            ANSI 50N & 1100 & 0 & DT \\\\ \\hline",
-        ]
+        if not es_modo_breaker:
+            filas_reco_proy = [
+                "            ANSI 51 & 44 & 0,05 & IEC - EI \\\\ \\hline",
+                "            ANSI 50 & 200 & 0 & DT \\\\ \\hline",
+                "            ANSI 51N & 16 & 0,05 & IEC - NI \\\\ \\hline",
+                "            ANSI 50N & 1100 & 0 & DT \\\\ \\hline",
+            ]
+        else:
+            filas_reco_proy = [
+                "            Protección Térmica (L - Sobrecarga) & 1360 & Curva Térmica & Inversa \\\\ \\hline",
+                "            Protección Magnética (I - Instantáneo) & 2720 & 0,0 & DT \\\\ \\hline",
+                "            Protección Cortocircuito (S - Temporizado) & 2000 & 0,1 & DT \\\\ \\hline",
+                "            Protección Falla a Tierra (G - Opcional) & 400 & 0,1 & DT \\\\ \\hline",
+            ]
     contenido_filas_reco_proy = "\n".join(filas_reco_proy)
+
+    if not es_modo_breaker:
+        bloque_formulas_sobrecorriente = f"""Los ajustes de protección de la función ANSI 51 del proyecto se calcularon con base en la corriente nominal del sistema por un factor de 1.1 según lo establecido en el acuerdo CNO 2233, para la función 51N se realiza el ajuste al 40\\% de la corriente nominal. A continuación se muestran las fórmulas para dichos cálculos:\\\\
+
+\\textbf{{Cálculo de arranque 51P.}}\\\\
+\\[ I_n = \\frac{{P}}{{\\sqrt{{3}} \\cdot V_L \\cdot \\cos(\\phi)}} \\quad ; \\quad I_{{51P}} = I_n \\cdot 1.1 \\]
+
+\\vspace{{0.5cm}}
+\\noindent Donde:
+\\begin{{itemize}}
+    \\item $I_{{n}}$: Corriente nominal.
+    \\item $V_{{L}}$: Tensión del sistema.
+    \\item $\\cos(\\phi)$: Factor de potencia.
+    \\item $I_{{51P}}$: Corriente de la función 51P.
+\\end{{itemize}}
+
+Dado esto:
+
+\\[ I_n = \\frac{{{calc_potencia}}}{{\\sqrt{{3}} \\cdot {calc_tension} \\cdot {calc_cosphi}}} \\]
+\\[ I_n = {calc_in_val} \\quad ; \\quad I_{{51P}} = {calc_in_val}*1.1 = {calc_i51p_exact} \\approx {calc_i51p_aprox} \\]
+
+\\textbf{{Cálculo de arranque 51N.}}\\\\
+\\[ I_{{51N}} = I_n \\cdot 0.4 \\]
+
+\\vspace{{0.5cm}}
+\\noindent \\textbf{{Donde:}}
+\\begin{{itemize}}
+    \\item $I_{{n}}$: Corriente nominal.
+    \\item $I_{{51N}}$: Corriente de la función 51N.
+\\end{{itemize}}
+
+Dado esto, la corriente de la función 51N:
+
+\\[ I_{{51N}} = {calc_in_val}*0.4 = {calc_i51n_exact} \\approx {calc_i51n_aprox} \\]"""
+    else:
+        bloque_formulas_sobrecorriente = f"""Los ajustes de protección para el interruptor termomagnético / Breaker del proyecto se determinaron a partir de la corriente nominal de la instalación y los requerimientos de protección contra sobrecarga continua (función térmica) y cortocircuito (función magnética). A continuación se muestran las fórmulas para dichos cálculos:\\\\
+
+\\textbf{{Cálculo de corriente nominal ($I_n$).}}\\\\
+\\[ I_n = \\frac{{P}}{{\\sqrt{{3}} \\cdot V_L \\cdot \\cos(\\phi)}} \\]
+
+\\vspace{{0.5cm}}
+\\noindent Donde:
+\\begin{{itemize}}
+    \\item $I_{{n}}$: Corriente nominal.
+    \\item $P$: Potencia del sistema.
+    \\item $V_{{L}}$: Tensión del sistema.
+    \\item $\\cos(\\phi)$: Factor de potencia.
+\\end{{itemize}}
+
+Dado esto:
+
+\\[ I_n = \\frac{{{calc_potencia}}}{{\\sqrt{{3}} \\cdot {calc_tension} \\cdot {calc_cosphi}}} = {calc_in_val} \\]
+
+\\vspace{{0.3cm}}
+\\textbf{{Cálculo de la protección térmica de sobrecarga ($I_{{\\text{{térmica}}}}$ / Función L).}}\\\\
+\\[ I_{{\\text{{térmica}}}} = I_n \\cdot {calc_factor_termico} \\]
+
+\\vspace{{0.5cm}}
+\\noindent \\textbf{{Donde:}}
+\\begin{{itemize}}
+    \\item $I_{{n}}$: Corriente nominal calculada.
+    \\item $I_{{\\text{{térmica}}}}$: Corriente de ajuste térmico de sobrecarga o calibre del Breaker.
+\\end{{itemize}}
+
+Dado esto:
+
+\\[ I_{{\\text{{térmica}}}} = {calc_in_val} \\cdot {calc_factor_termico} = {calc_itermica_exact} \\approx {calc_itermica_aprox} \\]
+
+\\vspace{{0.3cm}}
+\\textbf{{Cálculo de la protección magnética de cortocircuito ($I_{{\\text{{magnética}}}}$ / Función I/S).}}\\\\
+\\[ I_{{\\text{{magnética}}}} = I_n \\cdot {calc_factor_magnetico} \\]
+
+\\vspace{{0.5cm}}
+\\noindent \\textbf{{Donde:}}
+\\begin{{itemize}}
+    \\item $I_{{n}}$: Corriente nominal.
+    \\item $I_{{\\text{{magnética}}}}$: Corriente de disparo magnético instantáneo / temporizado.
+\\end{{itemize}}
+
+Dado esto:
+
+\\[ I_{{\\text{{magnética}}}} = {calc_in_val} \\cdot {calc_factor_magnetico} = {calc_imagnetica_exact} \\approx {calc_imagnetica_aprox} \\]"""
 
     df_resumen_tot = params.get("df_resumen_totales", None)
     filas_resumen_tot = []
@@ -984,45 +1095,14 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
 
 %============= AJUSTES PROTECCIONES PROYECTO ===================
 \\newcommand{{\\Ajustessobrecorrienteproyecto}}{{%
-Los ajustes de protección de la función ANSI 51 del proyecto se calcularon con base en la corriente nominal del sistema por un factor de 1.1 según lo establecido en el acuerdo CNO 2233, para la función 51N se realiza el ajuste al 40\\% de la corriente nominal. A continuación se muestran las fórmulas para dichos cálculos:\\\\
-
-\\textbf{{Cálculo de arranque 51P.}}\\\\
-\\[ I_n = \\frac{{P}}{{\\sqrt{{3}} \\cdot V_L \\cdot \\cos(\\phi)}} \\quad ; \\quad I_{{51P}} = I_n \\cdot 1.1 \\]
-
-\\vspace{{0.5cm}}
-\\noindent Donde:
-\\begin{{itemize}}
-    \\item $I_{{n}}$: Corriente nominal.
-    \\item $V_{{L}}$: Tensión del sistema.
-    \\item $\\cos(\\phi)$: Factor de potencia.
-    \\item $I_{{51P}}$: Corriente de la función 51P.
-\\end{{itemize}}
-
-Dado esto:
-
-\\[ I_n = \\frac{{{calc_potencia}}}{{\\sqrt{{3}} \\cdot {calc_tension} \\cdot {calc_cosphi}}} \\]
-\\[ I_n = {calc_in_val} \\quad ; \\quad I_{{51P}} = {calc_in_val}*1.1 = {calc_i51p_exact} \\approx {calc_i51p_aprox} \\]
-
-\\textbf{{Cálculo de arranque 51N.}}\\\\
-\\[ I_{{51N}} = I_n \\cdot 0.4 \\]
-
-\\vspace{{0.5cm}}
-\\noindent \\textbf{{Donde:}}
-\\begin{{itemize}}
-    \\item $I_{{n}}$: Corriente nominal.
-    \\item $I_{{51N}}$: Corriente de la función 51N.
-\\end{{itemize}}
-
-Dado esto, la corriente de la función 51N:
-
-\\[ I_{{51N}} = {calc_in_val}*0.4 = {calc_i51n_exact} \\approx {calc_i51n_aprox} \\]
+{bloque_formulas_sobrecorriente}
 
 {parrafo_calculo_50}
 
 \\begin{{center}}
     \\begin{{minipage}}{{1\\textwidth}}
         \\centering
-        \\captionof{{table}}{{Ajustes de protección para el Reconectador \\nombreProyecto.}}
+        \\captionof{{table}}{{{caption_tabla_proy}}}
         \\label{{tab:ajustesrecoProyecto}}
         \\begingroup
         \\setlength{{\\tabcolsep}}{{12pt}}
