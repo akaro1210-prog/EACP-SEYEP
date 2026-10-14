@@ -483,7 +483,8 @@ Para la definición del umbral de operación de la función de sobretensión de 
         \\captionof{{table}}{{Ajustes de protección para el Reconectador \\recocabecera.}}
         \\label{{tab:ajustesrecoCabecera}}
         \\begingroup
-        \\setlength{{\\tabcolsep}}{{12pt}}
+        \\resizebox{{\\textwidth}}{{!}}{{%
+        \\setlength{{\\tabcolsep}}{{8pt}}
         \\renewcommand{{\\arraystretch}}{{1.3}}
         \\small
         \\begin{{tabular}}{{|l|c|c|c|}}
@@ -491,7 +492,8 @@ Para la definición del umbral de operación de la función de sobretensión de 
             \\rowcolor{{azulSeyep}}
             \\multicolumn{{1}}{{|c|}}{{\\color{{white}}\\textbf{{Parámetro}}}} & \\color{{white}}\\textbf{{Pick Up [Aprim]}} & \\color{{white}}\\textbf{{DIAL [s]}} & \\color{{white}}\\textbf{{Curva}} \\\\ \\hline
 {str_filas_cab}
-        \\end{{tabular}}
+        \\end{{tabular}}%
+        }}
         \\endgroup
     \\end{{minipage}}
 \\end{{center}}
@@ -521,7 +523,8 @@ Para la definición del umbral de operación de la función de sobretensión de 
         \\captionof{{table}}{{Ajustes de protección para el Reconectador \\recoCTO.}}
         \\label{{tab:ajustesrecoCTO}}
         \\begingroup
-        \\setlength{{\\tabcolsep}}{{12pt}}
+        \\resizebox{{\\textwidth}}{{!}}{{%
+        \\setlength{{\\tabcolsep}}{{8pt}}
         \\renewcommand{{\\arraystretch}}{{1.3}}
         \\small
         \\begin{{tabular}}{{|l|c|c|c|}}
@@ -529,7 +532,8 @@ Para la definición del umbral de operación de la función de sobretensión de 
             \\rowcolor{{azulSeyep}}
             \\multicolumn{{1}}{{|c|}}{{\\color{{white}}\\textbf{{Parámetro}}}} & \\color{{white}}\\textbf{{Pick Up [Aprim]}} & \\color{{white}}\\textbf{{DIAL [s]}} & \\color{{white}}\\textbf{{Curva}} \\\\ \\hline
 {str_filas_cto}
-        \\end{{tabular}}
+        \\end{{tabular}}%
+        }}
         \\endgroup
     \\end{{minipage}}
 \\end{{center}}
@@ -558,7 +562,8 @@ Para la definición del umbral de operación de la función de sobretensión de 
         \\captionof{{table}}{{Ajustes de protección para {nom_ex}.}}
         \\label{{{lbl_ex}}}
         \\begingroup
-        \\setlength{{\\tabcolsep}}{{12pt}}
+        \\resizebox{{\\textwidth}}{{!}}{{%
+        \\setlength{{\\tabcolsep}}{{8pt}}
         \\renewcommand{{\\arraystretch}}{{1.3}}
         \\small
         \\begin{{tabular}}{{|l|c|c|c|}}
@@ -566,7 +571,8 @@ Para la definición del umbral de operación de la función de sobretensión de 
             \\rowcolor{{azulSeyep}}
             \\multicolumn{{1}}{{|c|}}{{\\color{{white}}\\textbf{{Parámetro}}}} & \\color{{white}}\\textbf{{Pick Up [Aprim]}} & \\color{{white}}\\textbf{{DIAL [s]}} & \\color{{white}}\\textbf{{Curva}} \\\\ \\hline
 {str_filas_ex}
-        \\end{{tabular}}
+        \\end{{tabular}}%
+        }}
         \\endgroup
     \\end{{minipage}}
 \\end{{center}}
@@ -1026,6 +1032,9 @@ Dado esto:
 
 %=============================Tabla control cambios===============================================
 \\newcommand{{\\controlcambios}}{{%
+    \\begingroup
+    \\resizebox{{\\textwidth}}{{!}}{{%
+    \\renewcommand{{\\arraystretch}}{{1.2}}
     \\begin{{tabular}}{{|c|l|c|l|}}
         \\hline
         \\rowcolor{{azulSeyep}}
@@ -1035,7 +1044,9 @@ Dado esto:
         \\textbf{{\\textcolor{{white}}{{OBSERVACIONES}}}} \\\\
         \\hline
 {contenido_filas_cambios}
-    \\end{{tabular}}
+    \\end{{tabular}}%
+    }}
+    \\endgroup
 }}
 
 %============================ SISTEMA AC ============================
@@ -1047,6 +1058,7 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
         \\captionof{{table}}{{Sistema AC}}
         \\label{{tab:sistema_AC}}
         \\begingroup
+        \\resizebox{{\\linewidth}}{{!}}{{%
         \\setlength{{\\tabcolsep}}{{10pt}}
         \\renewcommand{{\\arraystretch}}{{1.3}}
         \\begin{{tabular}}{{|l|c|}}
@@ -1060,7 +1072,8 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
             Intensidad máxima [A] & {ac_corriente_max} \\\\ \\hline
             Factor de carga continua & {ac_factor_carga} \\\\ \\hline
             Protección en tablero principal ($\\text{{I}}_{{\\text{{max}}}} \\times 1,25$) [A] & {ac_proteccion_tablero} \\\\ \\hline
-        \\end{{tabular}}
+        \\end{{tabular}}%
+        }}
         \\endgroup{bloque_nota_ac}
     \\end{{minipage}}
 \\end{{center}}
@@ -1084,6 +1097,7 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
         \\captionof{{table}}{{Verificación tensión 3V0 ante fallas monofásicas en el PC}}
         \\label{{tab:tresVcero}}
         \\begingroup
+        \\resizebox{{0.9\\textwidth}}{{!}}{{%
         \\setlength{{\\tabcolsep}}{{8pt}}
         \\renewcommand{{\\arraystretch}}{{1.2}}
         \\small
@@ -1092,7 +1106,8 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
             \\rowcolor{{azulSeyep}}
             \\multicolumn{{1}}{{|c|}}{{\\color{{white}}\\textbf{{Impedancia de falla [ohms]}}}} & \\color{{white}}\\textbf{{3V0 [kV]}} & \\color{{white}}\\textbf{{3V0 [p.u]}} \\\\ \\hline
 {contenido_filas_3v0}
-        \\end{{tabular}}
+        \\end{{tabular}}%
+        }}
         \\endgroup
     \\end{{minipage}}
 \\end{{center}}
@@ -1110,7 +1125,8 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
         \\captionof{{table}}{{{caption_tabla_proy}}}
         \\label{{tab:ajustesrecoProyecto}}
         \\begingroup
-        \\setlength{{\\tabcolsep}}{{12pt}}
+        \\resizebox{{\\textwidth}}{{!}}{{%
+        \\setlength{{\\tabcolsep}}{{8pt}}
         \\renewcommand{{\\arraystretch}}{{1.3}}
         \\small
         \\begin{{tabular}}{{|l|c|c|c|}}
@@ -1118,7 +1134,8 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
             \\rowcolor{{azulSeyep}}
             {encabezados_tabla_proy}
 {contenido_filas_reco_proy}
-        \\end{{tabular}}
+        \\end{{tabular}}%
+        }}
         \\endgroup
     \\end{{minipage}}
 \\end{{center}}
@@ -1210,6 +1227,7 @@ Con el fin de verificar las protecciones se presenta la siguiente información t
         \\captionof{{table}}{{Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal mayor > 0,25 MW.}}
         \\label{{tab:funciones_proteccion}}
         \\begingroup
+        \\resizebox{{\\textwidth}}{{!}}{{%
         \\setlength{{\\tabcolsep}}{{8pt}}
         \\renewcommand{{\\arraystretch}}{{1.2}}
         \\small
@@ -1218,7 +1236,8 @@ Con el fin de verificar las protecciones se presenta la siguiente información t
             \\rowcolor{{azulSeyep}}
             \\multicolumn{{1}}{{|c|}}{{\\color{{white}}\\textbf{{Función de protección}}}} & \\color{{white}}\\textbf{{PC}} & \\color{{white}}\\textbf{{UG}} & \\color{{white}}\\textbf{{Notas}} \\\\ \\hline
 {contenido_filas_func_prot}
-        \\end{{tabular}}
+        \\end{{tabular}}%
+        }}
         \\endgroup
     \\end{{minipage}}
 \\end{{center}}
