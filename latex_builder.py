@@ -401,8 +401,22 @@ def compilar_estudio_latex(params):
     contenido_filas_ajustes_cno = "\n".join(filas_ajustes_cno)
 
     # 4. Secciones 1.2 (27/59), 1.3 (59N) y 1.4 (Anti-Isla)
+    incluir_img_2759 = params.get("incluir_img_2759", True)
+    incluir_sec_59n = params.get("incluir_sec_59n", True)
     proteccion_tensiones_txt = params.get("proteccion_tensiones_txt", "")
-    cmd_img_2759 = incluir_imagen_segura("Proteccion27-59.png", "width=16.5cm")
+
+    if incluir_img_2759:
+        cmd_img_2759 = incluir_imagen_segura("Proteccion27-59.png", "width=16.5cm")
+        bloque_fig_2759 = f"""
+\\begin{{figure}}[h]
+    \\centering
+    {cmd_img_2759}
+    \\caption{{Verificación ajustes ANSI 27/59 con curvas HVRT y LVRT}}
+    \\label{{fig:proteccion27-59}}
+\\end{{figure}}
+"""
+    else:
+        bloque_fig_2759 = "\\phantomsection\\label{fig:proteccion27-59}%\n"
 
     df_3v0 = params.get("df_tres_vcero", None)
     filas_3v0 = []
@@ -422,6 +436,19 @@ def compilar_estudio_latex(params):
 
     texto_59n = params.get("texto_59n", "")
     texto_anti_isla = params.get("texto_anti_isla", "")
+
+    if incluir_sec_59n:
+        bloque_sec_59n = f"""
+\\newpage
+\\subsection{{\\textit{{Cálculos para la protección 59N}}}}
+Para la definición del umbral de operación de la función de sobretensión de neutro (59N), se realizaron simulaciones de cortocircuito monofásico en el Punto de Conexión (PC), variando la impedancia de falla para evaluar la respuesta de la tensión residual (3V0) del sistema. En la siguiente tabla se observan los valores de 3V0 para cada tipo de falla:
+
+\\tablatresVcero
+
+{texto_59n}
+"""
+    else:
+        bloque_sec_59n = ""
 
     # 5. Sección 1.5 (Sobrecorriente 51/50 y 51N/50N)
     incluir_reco_cabecera = params.get("incluir_reco_cabecera", True)
@@ -1139,22 +1166,8 @@ A continuación, se presenta el ajuste de protecciones de tensión y frecuencia 
 \\newpage
 \\subsection{{\\textit{{Cálculos para las protecciones 27 y 59}}}}
 \\protecciontensiones
-
-\\begin{{figure}}[h]
-    \\centering
-    {cmd_img_2759}
-    \\caption{{Verificación ajustes ANSI 27/59 con curvas HVRT y LVRT}}
-    \\label{{fig:proteccion27-59}}
-\\end{{figure}}
-
-\\newpage
-\\subsection{{\\textit{{Cálculos para la protección 59N}}}}
-Para la definición del umbral de operación de la función de sobretensión de neutro (59N), se realizaron simulaciones de cortocircuito monofásico en el Punto de Conexión (PC), variando la impedancia de falla para evaluar la respuesta de la tensión residual (3V0) del sistema. En la siguiente tabla se observan los valores de 3V0 para cada tipo de falla:
-
-\\tablatresVcero
-
-{texto_59n}
-
+{bloque_fig_2759}
+{bloque_sec_59n}
 \\subsection{{\\textit{{Cálculos para la protección Anti-isla}}}}
 {texto_anti_isla}
 
