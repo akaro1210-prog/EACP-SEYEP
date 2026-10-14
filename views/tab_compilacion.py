@@ -49,12 +49,17 @@ def render(
                             mime="text/plain"
                         )
             else:
-                st.error(resultado)
+                if "No se encontró el compilador 'pdflatex'" in resultado:
+                    st.warning(resultado)
+                else:
+                    st.error(resultado)
+
                 if os.path.exists("Anexo_EACP.tex"):
                     with open("Anexo_EACP.tex", "rb") as f_tex:
                         st.download_button(
-                            label="📄 Descargar archivo .tex para revisión",
+                            label="📄 Descargar código fuente LaTeX (Anexo_EACP.tex)",
                             data=f_tex.read(),
                             file_name="Anexo_EACP.tex",
-                            mime="text/plain"
+                            mime="text/plain",
+                            help="Puedes descargar este archivo .tex y abrirlo en Overleaf o en tu editor LaTeX favorito para compilarlo directamente a PDF."
                         )
