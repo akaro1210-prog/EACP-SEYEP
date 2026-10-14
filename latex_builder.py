@@ -632,6 +632,11 @@ Para la definición del umbral de operación de la función de sobretensión de 
             ]
     contenido_filas_reco_proy = "\n".join(filas_reco_proy)
 
+    if es_modo_breaker:
+        encabezados_tabla_proy = r"\multicolumn{1}{|c|}{\color{white}\textbf{Parámetro / Función}} & \color{white}\textbf{Ajuste [A]} & \color{white}\textbf{Temporización} & \color{white}\textbf{Curva / Característica} \\ \hline"
+    else:
+        encabezados_tabla_proy = r"\multicolumn{1}{|c|}{\color{white}\textbf{Parámetro}} & \color{white}\textbf{Pick Up [Aprim]} & \color{white}\textbf{DIAL [s]} & \color{white}\textbf{Curva} \\ \hline"
+
     if not es_modo_breaker:
         bloque_formulas_sobrecorriente = f"""Los ajustes de protección de la función ANSI 51 del proyecto se calcularon con base en la corriente nominal del sistema por un factor de 1.1 según lo establecido en el acuerdo CNO 2233, para la función 51N se realiza el ajuste al 40\\% de la corriente nominal. A continuación se muestran las fórmulas para dichos cálculos:\\\\
 
@@ -650,7 +655,7 @@ Para la definición del umbral de operación de la función de sobretensión de 
 Dado esto:
 
 \\[ I_n = \\frac{{{calc_potencia}}}{{\\sqrt{{3}} \\cdot {calc_tension} \\cdot {calc_cosphi}}} \\]
-\\[ I_n = {calc_in_val} \\quad ; \\quad I_{{51P}} = {calc_in_val}*1.1 = {calc_i51p_exact} \\approx {calc_i51p_aprox} \\]
+\\[ I_n = {calc_in_val} \\quad ; \\quad I_{{51P}} = {calc_in_val} \\cdot 1.1 = {calc_i51p_exact} \\approx {calc_i51p_aprox} \\]
 
 \\textbf{{Cálculo de arranque 51N.}}\\\\
 \\[ I_{{51N}} = I_n \\cdot 0.4 \\]
@@ -664,7 +669,7 @@ Dado esto:
 
 Dado esto, la corriente de la función 51N:
 
-\\[ I_{{51N}} = {calc_in_val}*0.4 = {calc_i51n_exact} \\approx {calc_i51n_aprox} \\]"""
+\\[ I_{{51N}} = {calc_in_val} \\cdot 0.4 = {calc_i51n_exact} \\approx {calc_i51n_aprox} \\]"""
     else:
         bloque_formulas_sobrecorriente = f"""Los ajustes de protección para el interruptor termomagnético / Breaker del proyecto se determinaron a partir de la corriente nominal de la instalación y los requerimientos de protección contra sobrecarga continua (función térmica) y cortocircuito (función magnética). A continuación se muestran las fórmulas para dichos cálculos:\\\\
 
@@ -685,34 +690,34 @@ Dado esto:
 \\[ I_n = \\frac{{{calc_potencia}}}{{\\sqrt{{3}} \\cdot {calc_tension} \\cdot {calc_cosphi}}} = {calc_in_val} \\]
 
 \\vspace{{0.3cm}}
-\\textbf{{Cálculo de la protección térmica de sobrecarga ($I_{{\\text{{térmica}}}}$ / Función L).}}\\\\
-\\[ I_{{\\text{{térmica}}}} = I_n \\cdot {calc_factor_termico} \\]
+\\textbf{{Cálculo de la protección térmica de sobrecarga ($I_{{\\text{{t\\'ermica}}}}$ / Función L).}}\\\\
+\\[ I_{{\\text{{t\\'ermica}}}} = I_n \\cdot {calc_factor_termico} \\]
 
 \\vspace{{0.5cm}}
 \\noindent \\textbf{{Donde:}}
 \\begin{{itemize}}
     \\item $I_{{n}}$: Corriente nominal calculada.
-    \\item $I_{{\\text{{térmica}}}}$: Corriente de ajuste térmico de sobrecarga o calibre del Breaker.
+    \\item $I_{{\\text{{t\\'ermica}}}}$: Corriente de ajuste térmico de sobrecarga o calibre del Breaker.
 \\end{{itemize}}
 
 Dado esto:
 
-\\[ I_{{\\text{{térmica}}}} = {calc_in_val} \\cdot {calc_factor_termico} = {calc_itermica_exact} \\approx {calc_itermica_aprox} \\]
+\\[ I_{{\\text{{t\\'ermica}}}} = {calc_in_val} \\cdot {calc_factor_termico} = {calc_itermica_exact} \\approx {calc_itermica_aprox} \\]
 
 \\vspace{{0.3cm}}
-\\textbf{{Cálculo de la protección magnética de cortocircuito ($I_{{\\text{{magnética}}}}$ / Función I/S).}}\\\\
-\\[ I_{{\\text{{magnética}}}} = I_n \\cdot {calc_factor_magnetico} \\]
+\\textbf{{Cálculo de la protección magnética de cortocircuito ($I_{{\\text{{magn\\'etica}}}}$ / Función I/S).}}\\\\
+\\[ I_{{\\text{{magn\\'etica}}}} = I_n \\cdot {calc_factor_magnetico} \\]
 
 \\vspace{{0.5cm}}
 \\noindent \\textbf{{Donde:}}
 \\begin{{itemize}}
     \\item $I_{{n}}$: Corriente nominal.
-    \\item $I_{{\\text{{magnética}}}}$: Corriente de disparo magnético instantáneo / temporizado.
+    \\item $I_{{\\text{{magn\\'etica}}}}$: Corriente de disparo magnético instantáneo / temporizado.
 \\end{{itemize}}
 
 Dado esto:
 
-\\[ I_{{\\text{{magnética}}}} = {calc_in_val} \\cdot {calc_factor_magnetico} = {calc_imagnetica_exact} \\approx {calc_imagnetica_aprox} \\]"""
+\\[ I_{{\\text{{magn\\'etica}}}} = {calc_in_val} \\cdot {calc_factor_magnetico} = {calc_imagnetica_exact} \\approx {calc_imagnetica_aprox} \\]"""
 
     df_resumen_tot = params.get("df_resumen_totales", None)
     filas_resumen_tot = []
@@ -1111,7 +1116,7 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
         \\begin{{tabular}}{{|l|c|c|c|}}
             \\hline
             \\rowcolor{{azulSeyep}}
-            \\multicolumn{{1}}{{|c|}}{{\\color{{white}}\\textbf{{Parámetro}}}} & \\color{{white}}\\textbf{{Pick Up [Aprim]}} & \\color{{white}}\\textbf{{DIAL [s]}} & \\color{{white}}\\textbf{{Curva}} \\\\ \\hline
+            {encabezados_tabla_proy}
 {contenido_filas_reco_proy}
         \\end{{tabular}}
         \\endgroup
@@ -1270,6 +1275,19 @@ Antes de calcular las protecciones del reconectador del punto de conexión, es i
     with open(tex_filename, "w", encoding="utf-8") as f:
         f.write(contenido_latex)
 
+    import shutil
+    pdflatex_bin = shutil.which("pdflatex")
+    if not pdflatex_bin:
+        return False, (
+            "⚠️ No se encontró el compilador 'pdflatex' en el sistema operativo (PATH).\n\n"
+            "El archivo de código LaTeX fuente ('Anexo_EACP.tex') ha sido generado con éxito y está listo para descargar a continuación.\n\n"
+            "Para generar el PDF directamente en tu computador:\n"
+            "• En Windows: Instala MiKTeX (https://miktex.org) o TeX Live. Durante la instalación, marca la opción 'Add to PATH' o reinicia tu terminal/IDE tras instalarlo.\n"
+            "• En Linux (Ubuntu/Debian): Ejecuta en consola: sudo apt update && sudo apt install -y texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-science texlive-lang-spanish\n"
+            "• En Mac: Instala MacTeX o BasicTeX (brew install --cask mactex).\n"
+            "• Sin instalar nada (Recomendado): Descarga el archivo 'Anexo_EACP.tex' generado abajo y súbelo a Overleaf (https://www.overleaf.com) para compilar y descargar tu PDF de inmediato."
+        )
+
     try:
         cmd = ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", tex_filename]
         proceso1 = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
@@ -1284,14 +1302,18 @@ Antes de calcular las protecciones del reconectador del punto de conexión, es i
                 if line.startswith("!"):
                     bloques_error.append("\n".join(todas_lineas[idx:idx + 4]))
             detalle = "\n---\n".join(bloques_error[:3]) if bloques_error else "Error desconocido en LaTeX."
-            return False, f"Fallo de compilación:\n{detalle}"
+            return False, f"Fallo de compilación de LaTeX:\n{detalle}"
 
         subprocess.run(cmd, capture_output=True, text=True, timeout=45)
 
         if os.path.exists(pdf_filename):
             return True, pdf_filename
         return False, "No se encontró el PDF resultante tras la compilación."
+    except FileNotFoundError:
+        return False, (
+            "⚠️ No se encontró el ejecutable 'pdflatex'. Asegúrate de que MiKTeX o TeX Live estén instalados y registrados en el PATH de tu sistema operativo."
+        )
     except subprocess.TimeoutExpired:
         return False, "La compilación tardó demasiado y fue interrumpida (timeout de 45s)."
     except Exception as e:
-        return False, f"Error inesperado: {str(e)}"
+        return False, f"Error inesperado durante la compilación: {str(e)}"
