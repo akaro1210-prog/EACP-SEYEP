@@ -1276,21 +1276,57 @@ Antes de calcular las protecciones del reconectador del punto de conexión, es i
         f.write(contenido_latex)
 
     import shutil
-    pdflatex_bin = shutil.which("pdflatex")
+    import glob
+
+    def buscar_ejecutable_pdflatex():
+        # 1. Probar en PATH del sistema
+        ejecutable = shutil.which("pdflatex") or shutil.which("pdflatex.exe")
+        if ejecutable:
+            return ejecutable
+
+        # 2. Rutas conocidas en Windows (MiKTeX y TeX Live)
+        rutas_windows = [
+            r"C:\Program Files\MiKTeX\miktex\bin\x64\pdflatex.exe",
+            r"C:\Program Files (x86)\MiKTeX\miktex\bin\pdflatex.exe",
+            os.path.expandvars(r"%LOCALAPPDATA%\Programs\MiKTeX\miktex\bin\x64\pdflatex.exe"),
+            os.path.expandvars(r"%USERPROFILE%\AppData\Local\Programs\MiKTeX\miktex\bin\x64\pdflatex.exe"),
+        ]
+        # Búsqueda comodín en TeX Live Windows (ej. C:\texlive\2024\bin\windows\pdflatex.exe)
+        rutas_windows.extend(glob.glob(r"C:\texlive\*\bin\windows\pdflatex.exe"))
+        rutas_windows.extend(glob.glob(r"C:\texlive\*\bin\win32\pdflatex.exe"))
+
+        # 3. Rutas conocidas en Linux / Mac
+        rutas_unix = [
+            "/usr/bin/pdflatex",
+            "/usr/local/bin/pdflatex",
+            "/Library/TeX/texbin/pdflatex",
+            "/usr/texbin/pdflatex"
+        ]
+        rutas_unix.extend(glob.glob("/usr/local/texlive/*/bin/*/pdflatex"))
+
+        todas_rutas = rutas_windows if os.name == 'nt' else rutas_unix
+        for r in todas_rutas:
+            if os.path.isfile(r) and os.access(r, os.X_OK):
+                return r
+
+        return None
+
+    pdflatex_bin = buscar_ejecutable_pdflatex()
+
     if not pdflatex_bin:
         return False, (
-            "⚠️ No se encontró el compilador 'pdflatex' en el sistema operativo (PATH).\n\n"
-            "El archivo de código LaTeX fuente ('Anexo_EACP.tex') ha sido generado con éxito y está listo para descargar a continuación.\n\n"
-            "Para generar el PDF directamente en tu computador:\n"
-            "• En Windows: Instala MiKTeX (https://miktex.org) o TeX Live. Durante la instalación, marca la opción 'Add to PATH' o reinicia tu terminal/IDE tras instalarlo.\n"
-            "• En Linux (Ubuntu/Debian): Ejecuta en consola: sudo apt update && sudo apt install -y texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-science texlive-lang-spanish\n"
-            "• En Mac: Instala MacTeX o BasicTeX (brew install --cask mactex).\n"
-            "• Sin instalar nada (Recomendado): Descarga el archivo 'Anexo_EACP.tex' generado abajo y súbelo a Overleaf (https://www.overleaf.com) para compilar y descargar tu PDF de inmediato."
+            "⚠️ No se encontró el ejecutable 'pdflatex' en el sistema.\n\n"
+            "El archivo fuente 'Anexo_EACP.tex' fue generado y guardado correctamente.\n\n"
+            "¿Por qué ocurre esto?\n"
+            "• Si estás en Streamlit Cloud: Asegúrate de tener el archivo 'packages.txt' en la raíz de tu repositorio de GitHub con los paquetes de texlive (texlive-latex-base, texlive-lang-spanish, etc.) y dale 'Reboot App' en el menú de Streamlit.\n"
+            "• Si estás en tu computador local: pdflatex no está en el PATH de la terminal o sesión donde abriste Streamlit. Reinicia tu terminal o verifica la instalación de MiKTeX / TeX Live.\n"
+            "• Opción Rápida: Puedes descargar el 'Anexo_EACP.tex' generado abajo y compilarlo en segundos en Overleaf."
         )
 
     try:
-        cmd = ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", tex_filename]
-        proceso1 = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
+        cmd = [pdflatex_bin, "-interaction=nonstopmode", "-halt-on-error", tex_filename]
+        # En Windows probar también shell=True si es necesario
+        proceso1 = subprocess.run(cmd, capture_output=True, text=True, timeout=50, shell=(os.name == 'nt'))
         if proceso1.returncode != 0:
             log_contenido = ""
             if os.path.exists("Anexo_EACP.log"):
@@ -1304,16 +1340,16 @@ Antes de calcular las protecciones del reconectador del punto de conexión, es i
             detalle = "\n---\n".join(bloques_error[:3]) if bloques_error else "Error desconocido en LaTeX."
             return False, f"Fallo de compilación de LaTeX:\n{detalle}"
 
-        subprocess.run(cmd, capture_output=True, text=True, timeout=45)
+        subprocess.run(cmd, capture_output=True, text=True, timeout=50, shell=(os.name == 'nt'))
 
         if os.path.exists(pdf_filename):
             return True, pdf_filename
         return False, "No se encontró el PDF resultante tras la compilación."
     except FileNotFoundError:
         return False, (
-            "⚠️ No se encontró el ejecutable 'pdflatex'. Asegúrate de que MiKTeX o TeX Live estén instalados y registrados en el PATH de tu sistema operativo."
+            "⚠️ Error al invocar 'pdflatex'. No se encuentra el comando ejecutable en las rutas del sistema."
         )
     except subprocess.TimeoutExpired:
-        return False, "La compilación tardó demasiado y fue interrumpida (timeout de 45s)."
+        return False, "La compilación tardó demasiado y fue interrumpida (timeout de 50s)."
     except Exception as e:
         return False, f"Error inesperado durante la compilación: {str(e)}"
