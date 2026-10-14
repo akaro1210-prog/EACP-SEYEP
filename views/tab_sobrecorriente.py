@@ -121,53 +121,140 @@ def render():
 
     # ================= 2. CÁLCULOS Y AJUSTES DEL PROYECTO =================
     st.markdown("---")
-    st.markdown("### 2. Fórmulas y Cálculos de Arranque 51P, 51N y 50/50N (`\\Ajustessobrecorrienteproyecto`)")
+    st.markdown("### 2. Fórmulas y Cálculos de Protección del Proyecto (`\\Ajustessobrecorrienteproyecto`)")
 
-    c_f1, c_f2, c_f3, c_f4 = st.columns(4)
-    with c_f1:
-        calc_potencia = st.text_input("Potencia P en fórmula In:", value=obtener_val("calc_potencia", "900kW"), key=f"cpot_{ver}")
-        calc_tension = st.text_input("Tensión VL en fórmula In:", value=obtener_val("calc_tension", "13.2kV"), key=f"cten_{ver}")
-    with c_f2:
-        calc_cosphi = st.text_input("Factor de potencia cos(phi):", value=obtener_val("calc_cosphi", "1"), key=f"cphi_{ver}")
-        calc_in_val = st.text_input("Corriente nominal In [A]:", value=obtener_val("calc_in_val", "39.36"), key=f"cin_{ver}")
-    with c_f3:
-        calc_i51p_exact = st.text_input("I_51P calculada (In * 1.1):", value=obtener_val("calc_i51p_exact", "43.296"), key=f"c51pe_{ver}")
-        calc_i51p_aprox = st.text_input("I_51P aproximada [A]:", value=obtener_val("calc_i51p_aprox", "44"), key=f"c51pa_{ver}")
-    with c_f4:
-        calc_i51n_exact = st.text_input("I_51N calculada (In * 0.4):", value=obtener_val("calc_i51n_exact", "15.744"), key=f"c51ne_{ver}")
-        calc_i51n_aprox = st.text_input("I_51N aproximada [A]:", value=obtener_val("calc_i51n_aprox", "16"), key=f"c51na_{ver}")
-
-    parrafo_50_default = (
-        r"Ahora, si calculamos la protección ANSI 50 basados en el nivel de corto por un factor del 70\% tendríamos un valor de 2.17kA, "
-        r"dado que el reconectador de cabecera cuenta con un esquema de salvar fusible con un disparo rápido a 250A, si programamos la función "
-        r"ANSI 50 con el valor del corto estaríamos ocasionandod disparos rápidos en la protección del circuito, por llo que para esta función "
-        r"se propone un valor de 200A, que supera el valor de la protección ANSI 51 y está por debajo de la función de disparo rápido del equipo "
-        r"de cabecera, la protección ANSI 50N se calculó con el nivel de corto monofásico por un factor de 0.7, dando como resultado un ajuste de "
-        r"1.1kA, teninedo en cuenta que para el elemento de tierra el OR no tiene un disparo rápido, este valor coordina adecuadamente con el elemento de protección del OR."
-        "\n\\\\\n"
-        r"La simulación para los cortos se realizó con el equivalente de red suministrado por el OR para el nivel de tensión \NT\ según los insumos. "
-        r"El resumen de los ajustes de protección quedan depositados en las \cref{tab:ajustesrecoProyecto,tab:resumenajustestotales}."
-    )
-    parrafo_calculo_50 = st.text_area(
-        "Párrafo explicativo de ANSI 50 y 50N:",
-        value=obtener_val("parrafo_calculo_50", parrafo_50_default),
-        height=150,
-        key=f"p50_{ver}"
+    tipo_proteccion_principal = st.radio(
+        "⚡ Selecciona el tipo de funciones para la protección principal del proyecto:",
+        [
+            "Funciones para Relé o Reconectador (ANSI 51P, 51N y 50/50N)",
+            "Funciones para Protecciones Térmicas Breaker (Térmico/Sobrecarga y Magnético/Cortocircuito)"
+        ],
+        index=0 if "Breaker" not in str(obtener_val("tipo_proteccion_principal", "Relé o Reconectador")) else 1,
+        key=f"rad_tipo_prot_princ_{ver}"
     )
 
-    st.markdown("#### Tabla `tab:ajustesrecoProyecto` (Ajustes de protección para el Reconectador `\\nombreProyecto`)")
-    df_proy_default = pd.DataFrame([
-        {"Parámetro": "ANSI 51", "Pick Up [Aprim]": "44", "DIAL [s]": "0,05", "Curva": "IEC - EI"},
-        {"Parámetro": "ANSI 50", "Pick Up [Aprim]": "200", "DIAL [s]": "0", "Curva": "DT"},
-        {"Parámetro": "ANSI 51N", "Pick Up [Aprim]": "16", "DIAL [s]": "0,05", "Curva": "IEC - NI"},
-        {"Parámetro": "ANSI 50N", "Pick Up [Aprim]": "1100", "DIAL [s]": "0", "Curva": "DT"},
-    ])
-    df_ajustes_reco_proy = st.data_editor(
-        obtener_df("df_ajustes_reco_proy", df_proy_default),
-        num_rows="dynamic",
-        use_container_width=True,
-        key=f"ed_reco_proy_eacp_{ver}"
-    )
+    es_modo_breaker = "Breaker" in tipo_proteccion_principal
+
+    if not es_modo_breaker:
+        st.markdown("#### Fórmulas de Arranque 51P, 51N y 50/50N (Relé o Reconectador)")
+        c_f1, c_f2, c_f3, c_f4 = st.columns(4)
+        with c_f1:
+            calc_potencia = st.text_input("Potencia P en fórmula In:", value=obtener_val("calc_potencia", "900kW"), key=f"cpot_{ver}")
+            calc_tension = st.text_input("Tensión VL en fórmula In:", value=obtener_val("calc_tension", "13.2kV"), key=f"cten_{ver}")
+        with c_f2:
+            calc_cosphi = st.text_input("Factor de potencia cos(phi):", value=obtener_val("calc_cosphi", "1"), key=f"cphi_{ver}")
+            calc_in_val = st.text_input("Corriente nominal In [A]:", value=obtener_val("calc_in_val", "39.36"), key=f"cin_{ver}")
+        with c_f3:
+            calc_i51p_exact = st.text_input("I_51P calculada (In * 1.1):", value=obtener_val("calc_i51p_exact", "43.296"), key=f"c51pe_{ver}")
+            calc_i51p_aprox = st.text_input("I_51P aproximada [A]:", value=obtener_val("calc_i51p_aprox", "44"), key=f"c51pa_{ver}")
+        with c_f4:
+            calc_i51n_exact = st.text_input("I_51N calculada (In * 0.4):", value=obtener_val("calc_i51n_exact", "15.744"), key=f"c51ne_{ver}")
+            calc_i51n_aprox = st.text_input("I_51N aproximada [A]:", value=obtener_val("calc_i51n_aprox", "16"), key=f"c51na_{ver}")
+
+        calc_factor_termico = ""
+        calc_itermica_exact = ""
+        calc_itermica_aprox = ""
+        calc_factor_magnetico = ""
+        calc_imagnetica_exact = ""
+        calc_imagnetica_aprox = ""
+
+        parrafo_50_default = (
+            r"Ahora, si calculamos la protección ANSI 50 basados en el nivel de corto por un factor del 70\% tendríamos un valor de 2.17kA, "
+            r"dado que el reconectador de cabecera cuenta con un esquema de salvar fusible con un disparo rápido a 250A, si programamos la función "
+            r"ANSI 50 con el valor del corto estaríamos ocasionandod disparos rápidos en la protección del circuito, por llo que para esta función "
+            r"se propone un valor de 200A, que supera el valor de la protección ANSI 51 y está por debajo de la función de disparo rápido del equipo "
+            r"de cabecera, la protección ANSI 50N se calculó con el nivel de corto monofásico por un factor de 0.7, dando como resultado un ajuste de "
+            r"1.1kA, teninedo en cuenta que para el elemento de tierra el OR no tiene un disparo rápido, este valor coordina adecuadamente con el elemento de protección del OR."
+            "\n\\\\\n"
+            r"La simulación para los cortos se realizó con el equivalente de red suministrado por el OR para el nivel de tensión \NT\ según los insumos. "
+            r"El resumen de los ajustes de protección quedan depositados en las \cref{tab:ajustesrecoProyecto,tab:resumenajustestotales}."
+        )
+        parrafo_calculo_50 = st.text_area(
+            "Párrafo explicativo de ANSI 50 y 50N:",
+            value=obtener_val("parrafo_calculo_50", parrafo_50_default),
+            height=150,
+            key=f"p50_{ver}"
+        )
+
+        caption_tabla_proy = st.text_input(
+            "Título / Leyenda de la tabla de protección (`tab:ajustesrecoProyecto`):",
+            value=obtener_val("caption_tabla_proy", r"Ajustes de protección para el Reconectador \nombreProyecto."),
+            key=f"cap_tab_reco_{ver}"
+        )
+
+        df_proy_default = pd.DataFrame([
+            {"Parámetro": "ANSI 51", "Pick Up [Aprim]": "44", "DIAL [s]": "0,05", "Curva": "IEC - EI"},
+            {"Parámetro": "ANSI 50", "Pick Up [Aprim]": "200", "DIAL [s]": "0", "Curva": "DT"},
+            {"Parámetro": "ANSI 51N", "Pick Up [Aprim]": "16", "DIAL [s]": "0,05", "Curva": "IEC - NI"},
+            {"Parámetro": "ANSI 50N", "Pick Up [Aprim]": "1100", "DIAL [s]": "0", "Curva": "DT"},
+        ])
+        st.markdown(f"#### Tabla `tab:ajustesrecoProyecto` ({caption_tabla_proy})")
+        df_ajustes_reco_proy = st.data_editor(
+            obtener_df("df_ajustes_reco_proy", df_proy_default),
+            num_rows="dynamic",
+            use_container_width=True,
+            key=f"ed_reco_proy_eacp_{ver}"
+        )
+    else:
+        st.markdown("#### Fórmulas y Cálculos para Protecciones Térmicas Breaker / Interruptor")
+        c_b1, c_b2, c_b3, c_b4 = st.columns(4)
+        with c_b1:
+            calc_potencia = st.text_input("Potencia P en fórmula In:", value=obtener_val("calc_potencia", "900kW"), key=f"cpot_bk_{ver}")
+            calc_tension = st.text_input("Tensión VL en fórmula In:", value=obtener_val("calc_tension", "0.48kV"), key=f"cten_bk_{ver}")
+        with c_b2:
+            calc_cosphi = st.text_input("Factor de potencia cos(phi):", value=obtener_val("calc_cosphi", "1"), key=f"cphi_bk_{ver}")
+            calc_in_val = st.text_input("Corriente nominal In [A]:", value=obtener_val("calc_in_val", "1081"), key=f"cin_bk_{ver}")
+        with c_b3:
+            calc_factor_termico = st.text_input("Factor térmico (Sobrecarga / L):", value=obtener_val("calc_factor_termico", "1.25"), key=f"cfterm_bk_{ver}")
+            calc_itermica_exact = st.text_input("I_térmica calculada [A]:", value=obtener_val("calc_itermica_exact", "1351.25"), key=f"citerm_ex_{ver}")
+            calc_itermica_aprox = st.text_input("Calibre comercial Breaker / Ir [A]:", value=obtener_val("calc_itermica_aprox", "1360"), key=f"citerm_ap_{ver}")
+        with c_b4:
+            calc_factor_magnetico = st.text_input("Factor / Múltiplo magnético (Im):", value=obtener_val("calc_factor_magnetico", "2.5"), key=f"cfmag_bk_{ver}")
+            calc_imagnetica_exact = st.text_input("I_magnética calculada [A]:", value=obtener_val("calc_imagnetica_exact", "2702.5"), key=f"cimag_ex_{ver}")
+            calc_imagnetica_aprox = st.text_input("Ajuste disparo magnético / Im [A]:", value=obtener_val("calc_imagnetica_aprox", "2720"), key=f"cimag_ap_{ver}")
+
+        calc_i51p_exact = ""
+        calc_i51p_aprox = ""
+        calc_i51n_exact = ""
+        calc_i51n_aprox = ""
+
+        parrafo_breaker_default = (
+            r"Para la protección general en baja tensión de los inversores hacia el punto de conexión se seleccionó un interruptor de caja moldeada "
+            r"(Breaker) con unidad de disparo termomagnética / electrónica (LSI). La unidad térmica (protección contra sobrecarga continua, función L) "
+            r"se dimensionó con base en la corriente nominal calculada multiplicada por un factor de seguridad de 1.25 (según RETIE y normativa NTC 2050), "
+            r"obteniendo un ajuste comercial de \textbf{" + str(obtener_val("calc_itermica_aprox", "1360")) + r" A}. "
+            r"Por su parte, la unidad magnética (función de cortocircuito, disparo instantáneo / temporizado) se ajustó para garantizar la apertura "
+            r"rápida y selectiva ante fallas francas en bornes de los inversores o el transformador, evitando disparos ante corrientes transitorias de energización "
+            r"y coordinando con las protecciones de cabecera del sistema. En la \cref{tab:ajustesrecoProyecto} se resume el ajuste de las funciones de protección del Breaker."
+            "\n\\\\\n"
+            r"El resumen general de ajustes de protección se presenta en las \cref{tab:ajustesrecoProyecto,tab:resumenajustestotales}."
+        )
+        parrafo_calculo_50 = st.text_area(
+            "Párrafo explicativo de la Protección Térmica y Magnética del Breaker:",
+            value=obtener_val("parrafo_calculo_50", parrafo_breaker_default),
+            height=150,
+            key=f"pbk_{ver}"
+        )
+
+        caption_tabla_proy = st.text_input(
+            "Título / Leyenda de la tabla de protección (`tab:ajustesrecoProyecto`):",
+            value=obtener_val("caption_tabla_proy", r"Ajustes de protección para el Breaker \nombreProyecto."),
+            key=f"cap_tab_bk_{ver}"
+        )
+
+        df_breaker_default = pd.DataFrame([
+            {"Parámetro": "Protección Térmica (L - Sobrecarga)", "Pick Up [Aprim]": "1360", "DIAL [s]": "Curva Térmica", "Curva": "Inversa"},
+            {"Parámetro": "Protección Magnética (I - Instantáneo)", "Pick Up [Aprim]": "2720", "DIAL [s]": "0,0", "Curva": "DT"},
+            {"Parámetro": "Protección Cortocircuito (S - Temporizado)", "Pick Up [Aprim]": "2000", "DIAL [s]": "0,1", "Curva": "DT"},
+            {"Parámetro": "Protección Falla a Tierra (G - Opcional)", "Pick Up [Aprim]": "400", "DIAL [s]": "0,1", "Curva": "DT"},
+        ])
+        st.markdown(f"#### Tabla `tab:ajustesrecoProyecto` ({caption_tabla_proy})")
+        df_ajustes_reco_proy = st.data_editor(
+            obtener_df("df_ajustes_breaker_proy", df_breaker_default),
+            num_rows="dynamic",
+            use_container_width=True,
+            key=f"ed_breaker_proy_eacp_{ver}"
+        )
 
     st.markdown("#### Tabla `tab:resumenajustestotales` (Resumen ajuste de protecciones sistemáticas)")
     df_sist_default = pd.DataFrame([
@@ -360,6 +447,8 @@ def render():
         "df_reco_cto": df_reco_cto,
         "equipos_or_extra": equipos_or_extra,
         "txt_recierre_or": txt_recierre_or,
+        "tipo_proteccion_principal": tipo_proteccion_principal,
+        "caption_tabla_proy": caption_tabla_proy,
         "calc_potencia": calc_potencia,
         "calc_tension": calc_tension,
         "calc_cosphi": calc_cosphi,
@@ -368,8 +457,15 @@ def render():
         "calc_i51p_aprox": calc_i51p_aprox,
         "calc_i51n_exact": calc_i51n_exact,
         "calc_i51n_aprox": calc_i51n_aprox,
+        "calc_factor_termico": calc_factor_termico,
+        "calc_itermica_exact": calc_itermica_exact,
+        "calc_itermica_aprox": calc_itermica_aprox,
+        "calc_factor_magnetico": calc_factor_magnetico,
+        "calc_imagnetica_exact": calc_imagnetica_exact,
+        "calc_imagnetica_aprox": calc_imagnetica_aprox,
         "parrafo_calculo_50": parrafo_calculo_50,
         "df_ajustes_reco_proy": df_ajustes_reco_proy,
+        "df_ajustes_breaker_proy": df_ajustes_reco_proy if es_modo_breaker else obtener_df("df_ajustes_breaker_proy", pd.DataFrame()),
         "df_resumen_totales": df_resumen_totales,
         "es_con_cambio": es_con_cambio,
         "conclusion_coord_txt": conclusion_coord_txt,
