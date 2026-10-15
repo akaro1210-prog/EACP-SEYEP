@@ -483,10 +483,9 @@ Para la definición del umbral de operación de la función de sobretensión de 
         \\captionof{{table}}{{Ajustes de protección para el Reconectador \\recocabecera.}}
         \\label{{tab:ajustesrecoCabecera}}
         \\begingroup
-        \\resizebox{{\\textwidth}}{{!}}{{%
+        \\adjustbox{{max width=\\textwidth}}{{%
         \\setlength{{\\tabcolsep}}{{8pt}}
         \\renewcommand{{\\arraystretch}}{{1.3}}
-        \\small
         \\begin{{tabular}}{{|l|c|c|c|}}
             \\hline
             \\rowcolor{{azulSeyep}}
@@ -523,10 +522,9 @@ Para la definición del umbral de operación de la función de sobretensión de 
         \\captionof{{table}}{{Ajustes de protección para el Reconectador \\recoCTO.}}
         \\label{{tab:ajustesrecoCTO}}
         \\begingroup
-        \\resizebox{{\\textwidth}}{{!}}{{%
+        \\adjustbox{{max width=\\textwidth}}{{%
         \\setlength{{\\tabcolsep}}{{8pt}}
         \\renewcommand{{\\arraystretch}}{{1.3}}
-        \\small
         \\begin{{tabular}}{{|l|c|c|c|}}
             \\hline
             \\rowcolor{{azulSeyep}}
@@ -562,10 +560,9 @@ Para la definición del umbral de operación de la función de sobretensión de 
         \\captionof{{table}}{{Ajustes de protección para {nom_ex}.}}
         \\label{{{lbl_ex}}}
         \\begingroup
-        \\resizebox{{\\textwidth}}{{!}}{{%
+        \\adjustbox{{max width=\\textwidth}}{{%
         \\setlength{{\\tabcolsep}}{{8pt}}
         \\renewcommand{{\\arraystretch}}{{1.3}}
-        \\small
         \\begin{{tabular}}{{|l|c|c|c|}}
             \\hline
             \\rowcolor{{azulSeyep}}
@@ -772,7 +769,7 @@ Dado esto:
     \\captionof{{table}}{{Ajustes de protección propuestos para el Reconectador \\recocabecera.}}
     \\label{{tab:cambioAjustescabecera}}
     \\begingroup
-    \\resizebox{{\\textwidth}}{{!}}{{%
+    \\adjustbox{{max width=\\textwidth}}{{%
         \\renewcommand{{\\arraystretch}}{{1.5}}
         \\begin{{tabular}}{{|c|c|c|c|c|c|c|}}
             \\hline
@@ -808,7 +805,7 @@ Dado esto:
     \\captionof{{table}}{{Ajustes de protección propuestos para el Reconectador \\recoCTO.}}
     \\label{{tab:cambioAjustes}}
     \\begingroup
-    \\resizebox{{\\textwidth}}{{!}}{{%
+    \\adjustbox{{max width=\\textwidth}}{{%
         \\renewcommand{{\\arraystretch}}{{1.5}}
         \\begin{{tabular}}{{|c|c|c|c|c|c|c|}}
             \\hline
@@ -849,7 +846,7 @@ Dado esto:
     \\captionof{{table}}{{Ajustes de protección propuestos para {nom_cex}.}}
     \\label{{{lbl_cex}}}
     \\begingroup
-    \\resizebox{{\\textwidth}}{{!}}{{%
+    \\adjustbox{{max width=\\textwidth}}{{%
         \\renewcommand{{\\arraystretch}}{{1.5}}
         \\begin{{tabular}}{{|c|c|c|c|c|c|c|}}
             \\hline
@@ -1033,7 +1030,7 @@ Dado esto:
 %=============================Tabla control cambios===============================================
 \\newcommand{{\\controlcambios}}{{%
     \\begingroup
-    \\resizebox{{\\textwidth}}{{!}}{{%
+    \\adjustbox{{max width=\\textwidth}}{{%
     \\renewcommand{{\\arraystretch}}{{1.2}}
     \\begin{{tabular}}{{|c|l|c|l|}}
         \\hline
@@ -1058,7 +1055,7 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
         \\captionof{{table}}{{Sistema AC}}
         \\label{{tab:sistema_AC}}
         \\begingroup
-        \\resizebox{{\\linewidth}}{{!}}{{%
+        \\adjustbox{{max width=\\linewidth}}{{%
         \\setlength{{\\tabcolsep}}{{10pt}}
         \\renewcommand{{\\arraystretch}}{{1.3}}
         \\begin{{tabular}}{{|l|c|}}
@@ -1097,10 +1094,9 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
         \\captionof{{table}}{{Verificación tensión 3V0 ante fallas monofásicas en el PC}}
         \\label{{tab:tresVcero}}
         \\begingroup
-        \\resizebox{{0.9\\textwidth}}{{!}}{{%
+        \\adjustbox{{max width=0.9\\textwidth}}{{%
         \\setlength{{\\tabcolsep}}{{8pt}}
         \\renewcommand{{\\arraystretch}}{{1.2}}
-        \\small
         \\begin{{tabular}}{{|c|c|c|}}
             \\hline
             \\rowcolor{{azulSeyep}}
@@ -1125,10 +1121,9 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
         \\captionof{{table}}{{{caption_tabla_proy}}}
         \\label{{tab:ajustesrecoProyecto}}
         \\begingroup
-        \\resizebox{{\\textwidth}}{{!}}{{%
+        \\adjustbox{{max width=\\textwidth}}{{%
         \\setlength{{\\tabcolsep}}{{8pt}}
         \\renewcommand{{\\arraystretch}}{{1.3}}
-        \\small
         \\begin{{tabular}}{{|l|c|c|c|}}
             \\hline
             \\rowcolor{{azulSeyep}}
@@ -1145,7 +1140,7 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
     \\captionof{{table}}{{Resumen ajuste de protecciones sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL}}
     \\label{{tab:resumenajustestotales}}
     \\begingroup
-    \\resizebox{{\\textwidth}}{{!}}{{%
+    \\adjustbox{{max width=\\textwidth}}{{%
         \\renewcommand{{\\arraystretch}}{{1.3}}
         \\begin{{tabular}}{{|c|c|c|}}
             \\hline
@@ -1227,10 +1222,9 @@ Con el fin de verificar las protecciones se presenta la siguiente información t
         \\captionof{{table}}{{Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal mayor > 0,25 MW.}}
         \\label{{tab:funciones_proteccion}}
         \\begingroup
-        \\resizebox{{\\textwidth}}{{!}}{{%
+        \\adjustbox{{max width=\\textwidth}}{{%
         \\setlength{{\\tabcolsep}}{{8pt}}
         \\renewcommand{{\\arraystretch}}{{1.2}}
-        \\small
         \\begin{{tabular}}{{|l|c|c|c|}}
             \\hline
             \\rowcolor{{azulSeyep}}
@@ -1255,7 +1249,7 @@ A continuación, se presenta el ajuste de protecciones de tensión y frecuencia 
     \\captionof{{table}}{{Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL}}
     \\label{{tab:AjustesproteccionCNO}}
     \\begingroup
-    \\resizebox{{\\textwidth}}{{!}}{{%
+    \\adjustbox{{max width=\\textwidth}}{{%
         \\renewcommand{{\\arraystretch}}{{1.3}}
         \\begin{{tabular}}{{|c|c|c|c|}}
             \\hline
