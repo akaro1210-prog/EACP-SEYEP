@@ -52,7 +52,7 @@ def render(config_vars=None):
     with c3:
         ac_factor_carga = st.text_input("Factor de carga continua:", value=obtener_val("ac_factor_carga", "1,25"), key=f"ac_fc_{ver}")
         ac_proteccion_tablero = st.text_input(
-            "Protección en tablero principal (Imax x 1,25) [A]:",
+            "Protección en tablero principal (Imax x factor de carga continua) [A]:",
             value=obtener_val("ac_proteccion_tablero", "1353*" if es_048 else "967,6"),
             key=f"ac_ptab_{ver}"
         )
