@@ -108,10 +108,18 @@ TABLA_12_DEFAULT = [
 ]
 
 
-def obtener_datos_tablas_cno(clave_rango: str):
-    """Retorna las tablas por defecto, textos, notas y títulos según el rango seleccionado."""
+def obtener_datos_tablas_cno(clave_rango: str, version_cno: str = "2233"):
+    """Retorna las tablas por defecto, textos, notas y títulos según el rango seleccionado y la versión CNO."""
+    import copy
     es_menor_igual_025 = (clave_rango == "P_LE_025")
-    info_rango = RANGOS_POTENCIA_CNO.get(clave_rango, RANGOS_POTENCIA_CNO["P_025_TO_1"])
+    info_base = RANGOS_POTENCIA_CNO.get(clave_rango, RANGOS_POTENCIA_CNO["P_025_TO_1"])
+    info_rango = copy.deepcopy(info_base)
+
+    cno_str = str(version_cno).strip() if version_cno else "2233"
+    if cno_str != "2233":
+        for k in ["descripcion", "soe_comtrade", "anti_isla_respaldo", "frt_aplica"]:
+            if k in info_rango and isinstance(info_rango[k], str):
+                info_rango[k] = info_rango[k].replace("2233", cno_str)
 
     if es_menor_igual_025:
         df_func = list(TABLA_6_DEFAULT)
@@ -132,7 +140,7 @@ def obtener_datos_tablas_cno(clave_rango: str):
             "total autorizada de excedentes a la red), y esta función aplicará solo para autogeneradores con o sin entregar excedentes a la red."
         )
         obs_2 = (
-            "Para la verificación de sincronismo, conforme a la nota “r” del acuerdo CNO 2233 se implementará en el PC la función ANSI 25 "
+            f"Para la verificación de sincronismo, conforme a la nota “r” del acuerdo CNO {cno_str} se implementará en el PC la función ANSI 25 "
             "configurando solamente la condición de Barra viva OR - Línea muerta PV, con un umbral mínimo de tensión de 0.8 p.u "
             "que garantice que el sistema no permitirá energización cuando el sistema del OR se encuentre sin tensión."
         )

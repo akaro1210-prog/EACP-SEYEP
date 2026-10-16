@@ -256,9 +256,10 @@ def render():
             key=f"ed_breaker_proy_eacp_{ver}"
         )
 
+    norma_cno_val = st.session_state.get("config_vars", {}).get("normaCNO", st.session_state.get("normaCNO", "2233"))
     rango_pot_eacp = st.session_state.get("rango_potencia_cno", "P_025_TO_1")
     es_le_025 = (rango_pot_eacp == "P_LE_025")
-    etiqueta_rango_resumen = "(Tabla 11 CNO 2233 - P ≤ 0.25 MW)" if es_le_025 else "(Tabla 12 CNO 2233 - P > 0.25 MW)"
+    etiqueta_rango_resumen = f"(Tabla 11 CNO {norma_cno_val} - P ≤ 0.25 MW)" if es_le_025 else f"(Tabla 12 CNO {norma_cno_val} - P > 0.25 MW)"
 
     st.markdown(f"#### Tabla 6: Resumen Ajuste de Protecciones Sistemáticas (`tab:resumenajustestotales`) {etiqueta_rango_resumen}")
 

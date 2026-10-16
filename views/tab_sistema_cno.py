@@ -9,17 +9,18 @@ def render(config_vars=None):
     if config_vars is None:
         config_vars = st.session_state.get("config_vars", {})
 
-    # Detectar el rango de potencia activo
+    # Detectar el rango de potencia activo y versión CNO
+    norma_cno = config_vars.get("normaCNO", st.session_state.get("normaCNO", "2233"))
     clave_rango = config_vars.get("rango_potencia_cno", st.session_state.get("rango_potencia_cno", "P_025_TO_1"))
-    datos_normativos = obtener_datos_tablas_cno(clave_rango)
+    datos_normativos = obtener_datos_tablas_cno(clave_rango, version_cno=norma_cno)
     info_rango = datos_normativos["info_rango"]
     es_menor_025 = datos_normativos["es_menor_igual_025"]
 
-    st.subheader("⚡ Sección 1 y 1.1: Sistema AC (`\\sistemaAC`) y Protecciones Sistémicas CNO 2233")
+    st.subheader(f"⚡ Sección 1 y 1.1: Sistema AC (`\\sistemaAC`) y Protecciones Sistémicas CNO {norma_cno}")
     
     # Banner indicativo del rango normativo en uso
     st.info(
-        f"🎯 **Régimen de Capacidad CNO 2233 en uso:** **{info_rango['nombre']}**\n\n"
+        f"🎯 **Régimen de Capacidad CNO {norma_cno} en uso:** **{info_rango['nombre']}**\n\n"
         f"Se aplican automáticamente los requerimientos de la **{info_rango['tabla_funciones_num']}** "
         f"(Funciones mínimas) y la **{info_rango['tabla_ajustes_num']}** (Ajustes recomendados). "
         f"Puedes cambiar el rango en la **Pestaña 1 (Variables)** si tu proyecto tiene una potencia diferente."
@@ -72,14 +73,13 @@ def render(config_vars=None):
         intro_cno_default = (
             "Todo sistema de generación basados en inversores y frecuencia variable de capacidad instalada o nominal "
             "menor o igual a 0.25 MW (≤ 0.25 MW) conectado a los niveles 1, 2 y 3 deberá disponer de funciones de protección "
-            "disponibles a nivel de inversor conforme a la Tabla 6 del Acuerdo CNO 2233 de 2026, coordinando oportunamente con la red del OR."
+            f"disponibles a nivel de inversor conforme a la Tabla 6 del Acuerdo CNO {norma_cno}, coordinando oportunamente con la red del OR."
         )
     else:
         intro_cno_default = (
             "Todo sistema de generación basados en inversores y frecuencia variable conectado a los niveles 1, 2 y 3 "
             "deberán disponer de un esquema de protección para proteger la instalación del generador y su punto de conexión "
-            "con el sistema de distribución local, los cuales deberán ser selectivos y coordinar con la red existente, "
-            "según el acuerdo CNO 2233 de 2026."
+            f"con el sistema de distribución local, los cuales deberán ser selectivos y coordinar con la red existente, según el acuerdo CNO {norma_cno}."
         )
 
     intro_cno_txt = st.text_area(
@@ -90,13 +90,13 @@ def render(config_vars=None):
     )
 
     # -------------------------------------------------------------------------
-    # TABLA 2 (Tabla 6 o 7 de CNO 2233 según el rango)
+    # TABLA 2 (Tabla 6 o 7 según el rango)
     # -------------------------------------------------------------------------
     col_t2_head, col_t2_btn = st.columns([3.5, 1.2])
     with col_t2_head:
-        st.markdown(f"#### Tabla 2: Funciones de protección mínimas — **{info_rango['tabla_funciones_num']} CNO 2233** (`tab:funciones_proteccion`)")
+        st.markdown(f"#### Tabla 2: Funciones de protección mínimas — **{info_rango['tabla_funciones_num']} CNO {norma_cno}** (`tab:funciones_proteccion`)")
     with col_t2_btn:
-        if st.button("🔄 Restaurar Tabla CNO", key=f"btn_res_func_{ver}", help="Restablece los valores estándar del CNO 2233 para este rango"):
+        if st.button("🔄 Restaurar Tabla CNO", key=f"btn_res_func_{ver}", help=f"Restablece los valores estándar del CNO {norma_cno} para este rango"):
             st.session_state["df_funciones_prot"] = pd.DataFrame(datos_normativos["df_funciones_prot"])
             st.session_state["tabla_funciones_caption"] = datos_normativos["tabla_funciones_caption"]
             st.rerun()
@@ -143,14 +143,14 @@ def render(config_vars=None):
         )
 
     # -------------------------------------------------------------------------
-    # TABLA 3 (Tabla 11 o 12 de CNO 2233 según el rango)
+    # TABLA 3 (Tabla 11 o 12 según el rango)
     # -------------------------------------------------------------------------
     st.markdown("---")
     col_t3_head, col_t3_btn = st.columns([3.5, 1.2])
     with col_t3_head:
-        st.markdown(f"#### Tabla 3: Ajuste de protecciones recomendados — **{info_rango['tabla_ajustes_num']} CNO 2233** (`tab:AjustesproteccionCNO`)")
+        st.markdown(f"#### Tabla 3: Ajuste de protecciones recomendados — **{info_rango['tabla_ajustes_num']} CNO {norma_cno}** (`tab:AjustesproteccionCNO`)")
     with col_t3_btn:
-        if st.button("🔄 Restaurar Ajustes CNO", key=f"btn_res_ajust_{ver}", help="Restablece los ajustes recomendados del CNO 2233 para este rango"):
+        if st.button("🔄 Restaurar Ajustes CNO", key=f"btn_res_ajust_{ver}", help=f"Restablece los ajustes recomendados del CNO {norma_cno} para este rango"):
             st.session_state["df_ajustes_cno"] = pd.DataFrame(datos_normativos["df_ajustes_cno"])
             st.session_state["tabla_ajustes_caption"] = datos_normativos["tabla_ajustes_caption"]
             st.rerun()
@@ -176,7 +176,7 @@ def render(config_vars=None):
     st.session_state["df_ajustes_cno"] = df_ajustes_cno
 
     # Cuadro resumen con lineamientos complementarios de corte, anti-isla y registros
-    with st.expander("📌 Ver Requisitos Complementarios CNO 2233 para este Rango de Potencia", expanded=True):
+    with st.expander(f"📌 Ver Requisitos Complementarios CNO {norma_cno} para este Rango de Potencia", expanded=True):
         col_r1, col_r2, col_r3 = st.columns(3)
         with col_r1:
             st.markdown("**🔌 Equipo de Interrupción o Corte:**")

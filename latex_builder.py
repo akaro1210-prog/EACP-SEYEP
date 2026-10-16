@@ -302,6 +302,7 @@ def compilar_estudio_latex(params):
     reco_cto = escapar_latex(buscar_param(params, ["recoCTO", "reco_cto"], "211-11"))
     tipo_proteccion = escapar_latex(buscar_param(params, ["tipoproteccion", "tipo_proteccion"], "Reconectador"))
     reco_cabecera = escapar_latex(buscar_param(params, ["recocabecera", "reco_cabecera"], "211-11"))
+    norma_cno = escapar_latex(buscar_param(params, ["normaCNO", "norma_cno", "norma_CNO"], "2233"))
 
     # Variables 59N
     tres_vcero_mas_alta = escapar_latex(buscar_param(params, ["tresVceroMASALTA"], "0.373 p.u."))
@@ -358,9 +359,9 @@ def compilar_estudio_latex(params):
     caption_ajustes_cno = str(params.get("tabla_ajustes_caption") or default_caption_ajustes).strip()
 
     texto_intro_ajustes = (
-        r"A continuación, se presenta el ajuste de protecciones de tensión y frecuencia con los respectivos tiempos de disparo recomendados por el acuerdo CNO 2233 para los sistemas de generación basados en inversores menores o iguales a 0.25 MW (Tabla 11):\\"
+        rf"A continuación, se presenta el ajuste de protecciones de tensión y frecuencia con los respectivos tiempos de disparo recomendados por el acuerdo CNO {norma_cno} para los sistemas de generación basados en inversores menores o iguales a 0.25 MW (Tabla 11):\\"
         if es_menor_025 else
-        r"A continuación, se presenta el ajuste de protecciones de tensión y frecuencia con los respectivos tiempos de disparo recomendados por el acuerdo CNO 2233 para los sistemas de generación basados en inversores mayores a 0.25 MW (Tabla 12):\\"
+        rf"A continuación, se presenta el ajuste de protecciones de tensión y frecuencia con los respectivos tiempos de disparo recomendados por el acuerdo CNO {norma_cno} para los sistemas de generación basados en inversores mayores a 0.25 MW (Tabla 12):\\"
     )
 
     default_caption_resumen = (
@@ -370,10 +371,17 @@ def compilar_estudio_latex(params):
     )
     caption_resumen_totales = str(params.get("tabla_resumen_caption") or params.get("caption_resumen_totales") or default_caption_resumen).strip()
 
-    intro_cno_txt = params.get(
-        "intro_cno_txt",
-        ("Todo sistema de generación basados en inversores y frecuencia variable de capacidad instalada o nominal menor o igual a 0.25 MW (≤ 0.25 MW) conectado a los niveles 1, 2 y 3 deberá disponer de funciones de protección disponibles a nivel de inversor conforme a la Tabla 6 del Acuerdo CNO 2233 de 2026, coordinando oportunamente con la red del OR." if es_menor_025 else "Todo el sistema de generación basados en inversores y frecuencia variable conectado a los niveles 1, 2 y 3 deberán disponer de un esquema de protección para proteger la instalación del generador y su punto de conexión con el sistema de distribución local, los cuales deberán ser selectivos y coordinar con la red existente, según el acuerdo CNO 2233 de 2026.")
+    default_intro_cno = (
+        f"Todo sistema de generación basados en inversores y frecuencia variable de capacidad instalada o nominal menor o igual a 0.25 MW (≤ 0.25 MW) conectado a los niveles 1, 2 y 3 deberá disponer de funciones de protección disponibles a nivel de inversor conforme a la Tabla 6 del Acuerdo CNO {norma_cno}, coordinando oportunamente con la red del OR."
+        if es_menor_025 else
+        f"Todo el sistema de generación basados en inversores y frecuencia variable conectado a los niveles 1, 2 y 3 deberán disponer de un esquema de protección para proteger la instalación del generador y su punto de conexión con el sistema de distribución local, los cuales deberán ser selectivos y coordinar con la red existente, según el acuerdo CNO {norma_cno}."
     )
+    raw_intro = params.get("intro_cno_txt", default_intro_cno)
+    if "Acuerdo CNO 2233" in raw_intro and norma_cno != "2233":
+        raw_intro = raw_intro.replace("Acuerdo CNO 2233", f"Acuerdo CNO {norma_cno}")
+    if "acuerdo CNO 2233" in raw_intro and norma_cno != "2233":
+        raw_intro = raw_intro.replace("acuerdo CNO 2233", f"acuerdo CNO {norma_cno}")
+    intro_cno_txt = raw_intro
 
     df_func_prot = params.get("df_funciones_prot", None)
     filas_func_prot = []
@@ -692,7 +700,7 @@ Para la definición del umbral de operación de la función de sobretensión de 
         encabezados_tabla_proy = r"\multicolumn{1}{|c|}{\color{white}\textbf{Parámetro}} & \color{white}\textbf{Pick Up [Aprim]} & \color{white}\textbf{DIAL [s]} & \color{white}\textbf{Curva} \\ \hline"
 
     if not es_modo_breaker:
-        bloque_formulas_sobrecorriente = f"""Los ajustes de protección de la función ANSI 51 del proyecto se calcularon con base en la corriente nominal del sistema por un factor de 1.1 según lo establecido en el acuerdo CNO 2233, para la función 51N se realiza el ajuste al 40\\% de la corriente nominal. A continuación se muestran las fórmulas para dichos cálculos:\\\\
+        bloque_formulas_sobrecorriente = f"""Los ajustes de protección de la función ANSI 51 del proyecto se calcularon con base en la corriente nominal del sistema por un factor de 1.1 según lo establecido en el acuerdo CNO {norma_cno}, para la función 51N se realiza el ajuste al 40\\% de la corriente nominal. A continuación se muestran las fórmulas para dichos cálculos:\\\\
 
 \\textbf{{Cálculo de arranque 51P.}}\\\\
 \\[ I_n = \\frac{{P}}{{\\sqrt{{3}} \\cdot V_L \\cdot \\cos(\\phi)}} \\quad ; \\quad I_{{51P}} = I_n \\cdot 1.1 \\]
@@ -1071,6 +1079,7 @@ Dado esto:
 \\newcommand{{\\recoCTO}}{{{reco_cto}}}
 \\newcommand{{\\tipoproteccion}}{{{tipo_proteccion}}}
 \\newcommand{{\\recocabecera}}{{{reco_cabecera}}}
+\\newcommand{{\\normaCNO}}{{{norma_cno}}}
 
 % ---------- Variables 59N ----------
 \\newcommand{{\\tresVceroMASALTA}}{{{tres_vcero_mas_alta}}}

@@ -13,12 +13,14 @@ def render():
         "así como las protecciones mínimas y ajustes recomendados según el **Acuerdo CNO 2233 de 2026**."
     )
 
+    norma_cno_val = str(obtener_val("normaCNO", "2233")).strip() or "2233"
+
     # =========================================================================
-    # SELECTOR DE RANGO DE POTENCIA CNO 2233
+    # SELECTOR DE RANGO DE POTENCIA CNO
     # =========================================================================
     contenedor_rango = st.container(border=True)
     with contenedor_rango:
-        st.markdown("### ⚡ Rango de Potencia del Proyecto (Lineamientos CNO 2233)")
+        st.markdown(f"### ⚡ Rango de Potencia del Proyecto (Lineamientos CNO {norma_cno_val})")
         st.caption(
             "Selecciona el rango de capacidad instalada de generación. "
             "Cada rango determina las funciones de protección mínimas exigidas en el PC/UG, los umbrales de ajuste y los títulos formales de las tablas:"
@@ -49,7 +51,7 @@ def render():
         if clave_anterior is None:
             # Inicialización inicial si no existían DataFrames en sesión
             st.session_state["rango_potencia_cno_anterior"] = clave_rango_actual
-            datos_cno = obtener_datos_tablas_cno(clave_rango_actual)
+            datos_cno = obtener_datos_tablas_cno(clave_rango_actual, version_cno=norma_cno_val)
             if "df_funciones_prot" not in st.session_state:
                 st.session_state["df_funciones_prot"] = pd.DataFrame(datos_cno["df_funciones_prot"])
                 st.session_state["df_ajustes_cno"] = pd.DataFrame(datos_cno["df_ajustes_cno"])
@@ -60,7 +62,7 @@ def render():
             st.session_state["tabla_resumen_caption"] = datos_cno["tabla_resumen_caption"]
         elif clave_anterior != clave_rango_actual:
             # ¡El usuario cambió el selector de rango! Actualizar tablas y títulos automáticamente
-            datos_cno = obtener_datos_tablas_cno(clave_rango_actual)
+            datos_cno = obtener_datos_tablas_cno(clave_rango_actual, version_cno=norma_cno_val)
             st.session_state["df_funciones_prot"] = pd.DataFrame(datos_cno["df_funciones_prot"])
             st.session_state["df_ajustes_cno"] = pd.DataFrame(datos_cno["df_ajustes_cno"])
             st.session_state["obs_cno_1"] = datos_cno["obs_cno_1"]
@@ -78,7 +80,7 @@ def render():
         c_inf1, c_inf2 = st.columns([2, 1])
         with c_inf1:
             st.info(
-                f"📊 **Normativa CNO 2233 Activa:** **{info_rango['tabla_funciones_num']}** (Funciones mínimas) y "
+                f"📊 **Normativa CNO {norma_cno_val} Activa:** **{info_rango['tabla_funciones_num']}** (Funciones mínimas) y "
                 f"**{info_rango['tabla_ajustes_num']}** (Ajustes recomendados).\n\n"
                 f"• **Título Tabla 2:** {info_rango['tabla_funciones_caption']}\n\n"
                 f"• **Título Tabla 3:** {info_rango['tabla_ajustes_caption']}\n\n"
@@ -105,6 +107,12 @@ def render():
         mes_entrega = st.text_input("Mes y Año de Entrega Portada (\\mesentregainformemasyear):", value=obtener_val("mesentregainformemasyear", "Septiembre, 2026"), key=f"v_mes_{ver}")
         operador_red = st.text_input("Operador de Red (\\OR):", value=obtener_val("OR", "EPM"), key=f"v_or_{ver}")
         fecha_entrada = st.text_input("Fecha Entrada en Operación (\\FechaEntrada):", value=obtener_val("FechaEntrada", "marzo del 2027"), key=f"v_fent_{ver}")
+        norma_cno = st.text_input(
+            "Versión Acuerdo CNO (\\normaCNO):",
+            value=norma_cno_val,
+            key=f"v_cno_{ver}",
+            help="Número o código del Acuerdo CNO aplicable (por defecto 2233). Si se modifica por una norma futura, se actualizará automáticamente en todo el documento."
+        )
     with col2:
         cto = st.text_input("Circuito de Conexión (\\CTO):", value=obtener_val("CTO", "211-11"), key=f"v_cto_{ver}")
         ssee = st.text_input("Subestación (\\SSEE):", value=obtener_val("SSEE", "Doradal_13.2"), key=f"v_ssee_{ver}")
@@ -168,7 +176,9 @@ def render():
         "recoCTO": reco_cto,
         "tipoproteccion": tipo_proteccion,
         "recocabecera": reco_cabecera,
+        "normaCNO": norma_cno,
     }
     st.session_state["config_vars"] = config_vars
     st.session_state["rango_potencia_cno"] = clave_rango_actual
+    st.session_state["normaCNO"] = norma_cno
     return config_vars

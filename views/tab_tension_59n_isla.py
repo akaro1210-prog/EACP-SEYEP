@@ -170,9 +170,10 @@ def render():
         key=f"rad_isla_{ver}"
     )
 
+    norma_cno_val = st.session_state.get("config_vars", {}).get("normaCNO", st.session_state.get("normaCNO", "2233"))
     if modo_anti_isla.startswith("Opción 1"):
         anti_isla_default = (
-            r"En estricto cumplimiento de las directrices del Acuerdo CNO 2233 para instalaciones de Generación Distribuida y considerando "
+            rf"En estricto cumplimiento de las directrices del Acuerdo CNO {norma_cno_val} para instalaciones de Generación Distribuida y considerando "
             r"las restricciones normativas asociadas a la aplicación aislada de las funciones de Tasa de Cambio de Frecuencia (ANSI 81R, limitada "
             r"regulatoriamente a 5.0 Hz/s durante 500 ms según la Nota 28) y Salto de Vector (ANSI 78), se diseña e implementa un Esquema Anti-Isla "
             r"de Lógica Compuesta Pasiva por Supervisión Cruzada de Tensión y Frecuencia en el control ENTEC ETR300-R-600 mediante el software ETIMS. "
@@ -214,7 +215,7 @@ def render():
         )
     else:
         anti_isla_default = (
-            r"Para dar estricto cumplimiento a lo establecido en la Tabla 8 del Acuerdo CNO 2233 sobre la implementación de funciones anti-isla "
+            rf"Para dar estricto cumplimiento a lo establecido en la Tabla 8 del Acuerdo CNO {norma_cno_val} sobre la implementación de funciones anti-isla "
             r"mediante Lógica Compuesta, se propone programar un automatismo en el motor de eventos (Logic Engine / ECA) del controlador NOJA Power "
             r"RC10/RC15 que procesa las banderas de alarma internas mediante la ecuación booleana [A(UV13)] OR [A(UF2)] OR [A(OF2)] asociada a una "
             r"orden de disparo trifásico con bloqueo (Trip \& Lockout) y un tiempo de sostenimiento de 500 ms. La señal de bajo voltaje A(UV13) "
