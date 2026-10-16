@@ -9,8 +9,8 @@ def render():
     st.subheader("📋 Variables Globales y Rango de Potencia (Acuerdo CNO 2233)")
     st.write(
         "Define las variables principales del estudio y el rango de potencia del proyecto. "
-        "Al cambiar el rango de potencia, el sistema actualiza automáticamente las tablas normativas "
-        "de protecciones mínimas y ajustes recomendados según el **Acuerdo CNO 2233 de 2026**."
+        "Al cambiar el rango de potencia, el sistema actualiza automáticamente los **títulos y contenidos de las Tablas 2, 3 y 6** "
+        "así como las protecciones mínimas y ajustes recomendados según el **Acuerdo CNO 2233 de 2026**."
     )
 
     # =========================================================================
@@ -21,7 +21,7 @@ def render():
         st.markdown("### ⚡ Rango de Potencia del Proyecto (Lineamientos CNO 2233)")
         st.caption(
             "Selecciona el rango de capacidad instalada de generación. "
-            "Cada rango determina las funciones de protección mínimas exigidas en el PC/UG y los umbrales de ajuste recomendados:"
+            "Cada rango determina las funciones de protección mínimas exigidas en el PC/UG, los umbrales de ajuste y los títulos formales de las tablas:"
         )
 
         opciones_rango = list(RANGOS_POTENCIA_CNO.keys())
@@ -36,7 +36,7 @@ def render():
             options=nombres_rango,
             index=idx_default,
             key=f"rad_rango_potencia_{ver}",
-            help="Selecciona el rango según la capacidad nominal del proyecto. Las tablas de protecciones de la Pestaña 3 cambiarán automáticamente."
+            help="Selecciona el rango según la capacidad nominal del proyecto. Los títulos y contenidos de las Tablas 2, 3 y 6 cambiarán automáticamente."
         )
 
         # Mapear de nombre a clave
@@ -49,31 +49,42 @@ def render():
         if clave_anterior is None:
             # Inicialización inicial si no existían DataFrames en sesión
             st.session_state["rango_potencia_cno_anterior"] = clave_rango_actual
+            datos_cno = obtener_datos_tablas_cno(clave_rango_actual)
             if "df_funciones_prot" not in st.session_state:
-                datos_cno = obtener_datos_tablas_cno(clave_rango_actual)
                 st.session_state["df_funciones_prot"] = pd.DataFrame(datos_cno["df_funciones_prot"])
                 st.session_state["df_ajustes_cno"] = pd.DataFrame(datos_cno["df_ajustes_cno"])
                 st.session_state["obs_cno_1"] = datos_cno["obs_cno_1"]
                 st.session_state["obs_cno_2"] = datos_cno["obs_cno_2"]
+            st.session_state["tabla_funciones_caption"] = datos_cno["tabla_funciones_caption"]
+            st.session_state["tabla_ajustes_caption"] = datos_cno["tabla_ajustes_caption"]
+            st.session_state["tabla_resumen_caption"] = datos_cno["tabla_resumen_caption"]
         elif clave_anterior != clave_rango_actual:
-            # ¡El usuario cambió el selector de rango! Actualizar tablas automáticamente
+            # ¡El usuario cambió el selector de rango! Actualizar tablas y títulos automáticamente
             datos_cno = obtener_datos_tablas_cno(clave_rango_actual)
             st.session_state["df_funciones_prot"] = pd.DataFrame(datos_cno["df_funciones_prot"])
             st.session_state["df_ajustes_cno"] = pd.DataFrame(datos_cno["df_ajustes_cno"])
             st.session_state["obs_cno_1"] = datos_cno["obs_cno_1"]
             st.session_state["obs_cno_2"] = datos_cno["obs_cno_2"]
+            st.session_state["tabla_funciones_caption"] = datos_cno["tabla_funciones_caption"]
+            st.session_state["tabla_ajustes_caption"] = datos_cno["tabla_ajustes_caption"]
+            st.session_state["tabla_resumen_caption"] = datos_cno["tabla_resumen_caption"]
             st.session_state["rango_potencia_cno_anterior"] = clave_rango_actual
-            st.toast(f"✅ Tablas CNO actualizadas a {info_rango['tabla_funciones_num']} y {info_rango['tabla_ajustes_num']}", icon="⚡")
+            st.toast(
+                f"✅ Rango {clave_rango_actual} activado: Títulos de Tablas 2, 3 y 6 y tablas normativas actualizados a {info_rango['tabla_funciones_num']} y {info_rango['tabla_ajustes_num']}",
+                icon="⚡"
+            )
 
         # Tarjeta informativa del rango activo
         c_inf1, c_inf2 = st.columns([2, 1])
         with c_inf1:
             st.info(
-                f"📊 **Tablas CNO 2233 Activas:** **{info_rango['tabla_funciones_num']}** (Funciones mínimas) y "
+                f"📊 **Normativa CNO 2233 Activa:** **{info_rango['tabla_funciones_num']}** (Funciones mínimas) y "
                 f"**{info_rango['tabla_ajustes_num']}** (Ajustes recomendados).\n\n"
+                f"• **Título Tabla 2:** {info_rango['tabla_funciones_caption']}\n\n"
+                f"• **Título Tabla 3:** {info_rango['tabla_ajustes_caption']}\n\n"
+                f"• **Título Tabla 6:** {info_rango['tabla_resumen_caption']}\n\n"
                 f"• **Equipo de corte:** {info_rango['equipo_corte']}\n"
-                f"• **Esquema Anti-Isla:** {info_rango['anti_isla_respaldo']}\n"
-                f"• **Registros de eventos:** {info_rango['soe_comtrade']}"
+                f"• **Esquema Anti-Isla:** {info_rango['anti_isla_respaldo']}"
             )
         with c_inf2:
             st.markdown(
@@ -129,8 +140,9 @@ def render():
         "rango_desc": info_rango["descripcion"],
         "tabla_funciones_num": info_rango["tabla_funciones_num"],
         "tabla_ajustes_num": info_rango["tabla_ajustes_num"],
-        "tabla_funciones_caption": info_rango["tabla_funciones_caption"],
-        "tabla_ajustes_caption": info_rango["tabla_ajustes_caption"],
+        "tabla_funciones_caption": st.session_state.get("tabla_funciones_caption", info_rango["tabla_funciones_caption"]),
+        "tabla_ajustes_caption": st.session_state.get("tabla_ajustes_caption", info_rango["tabla_ajustes_caption"]),
+        "tabla_resumen_caption": st.session_state.get("tabla_resumen_caption", info_rango["tabla_resumen_caption"]),
         "mesentregainformemasyear": mes_entrega,
         "nombreProyecto": nombre_proyecto,
         "capacidadMW": capacidad_mw,

@@ -260,7 +260,20 @@ def render():
     es_le_025 = (rango_pot_eacp == "P_LE_025")
     etiqueta_rango_resumen = "(Tabla 11 CNO 2233 - P ≤ 0.25 MW)" if es_le_025 else "(Tabla 12 CNO 2233 - P > 0.25 MW)"
 
-    st.markdown(f"#### Tabla `tab:resumenajustestotales` {etiqueta_rango_resumen}")
+    st.markdown(f"#### Tabla 6: Resumen Ajuste de Protecciones Sistemáticas (`tab:resumenajustestotales`) {etiqueta_rango_resumen}")
+
+    default_caption_resumen = (
+        r"Resumen ajuste de protecciones sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW conectados al SDL"
+        if es_le_025 else
+        r"Resumen ajuste de protecciones sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL"
+    )
+    caption_resumen_totales = st.text_input(
+        "Título de la Tabla 6 en LaTeX (\\captionof{table}):",
+        value=st.session_state.get("tabla_resumen_caption", default_caption_resumen),
+        key=f"cap_resumen_tot_input_{ver}_{rango_pot_eacp}",
+        help="Título formal que aparecerá sobre la Tabla 6 y en el Índice de Tablas del informe."
+    )
+    st.session_state["tabla_resumen_caption"] = caption_resumen_totales
     if es_le_025:
         df_sist_default = pd.DataFrame([
             {"Función": "Etapa 1: Bajatensión (ANSI 27)", "Ajustes": "≤ 0.85 p.u", "Temporización": "≥ 2 s"},
@@ -483,6 +496,8 @@ def render():
         "df_ajustes_reco_proy": df_ajustes_reco_proy,
         "df_ajustes_breaker_proy": df_ajustes_reco_proy if es_modo_breaker else obtener_df("df_ajustes_breaker_proy", pd.DataFrame()),
         "df_resumen_totales": df_resumen_totales,
+        "tabla_resumen_caption": caption_resumen_totales,
+        "caption_resumen_totales": caption_resumen_totales,
         "es_con_cambio": es_con_cambio,
         "conclusion_coord_txt": conclusion_coord_txt,
         "incluir_tabla_cambio_cab": incluir_tabla_cambio_cab,

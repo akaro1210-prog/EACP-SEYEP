@@ -343,26 +343,32 @@ def compilar_estudio_latex(params):
     clave_rango_cno = params.get("rango_potencia_cno", "P_025_TO_1")
     es_menor_025 = (clave_rango_cno == "P_LE_025")
 
-    caption_func_cno = params.get(
-        "tabla_funciones_caption",
-        r"Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW (Tabla 6 Acuerdo CNO 2233)" if es_menor_025
-        else r"Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal mayor > 0,25 MW (Tabla 7 Acuerdo CNO 2233)"
+    default_caption_func = (
+        r"Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW."
+        if es_menor_025 else
+        r"Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal mayor > 0,25 MW."
     )
-    caption_ajustes_cno = params.get(
-        "tabla_ajustes_caption",
-        r"Ajuste de protecciones sistémicas para generación basada en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW conectados al SDL (Tabla 11 Acuerdo CNO 2233)" if es_menor_025
-        else r"Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL (Tabla 12 Acuerdo CNO 2233)"
+    caption_func_cno = str(params.get("tabla_funciones_caption") or default_caption_func).strip()
+
+    default_caption_ajustes = (
+        r"Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW conectados al SDL"
+        if es_menor_025 else
+        r"Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL"
     )
+    caption_ajustes_cno = str(params.get("tabla_ajustes_caption") or default_caption_ajustes).strip()
+
     texto_intro_ajustes = (
         r"A continuación, se presenta el ajuste de protecciones de tensión y frecuencia con los respectivos tiempos de disparo recomendados por el acuerdo CNO 2233 para los sistemas de generación basados en inversores menores o iguales a 0.25 MW (Tabla 11):\\"
         if es_menor_025 else
         r"A continuación, se presenta el ajuste de protecciones de tensión y frecuencia con los respectivos tiempos de disparo recomendados por el acuerdo CNO 2233 para los sistemas de generación basados en inversores mayores a 0.25 MW (Tabla 12):\\"
     )
-    caption_resumen_totales = (
-        r"Resumen ajuste de protecciones sistemáticas para generación basada en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW conectados al SDL (Tabla 11 Acuerdo CNO 2233)"
+
+    default_caption_resumen = (
+        r"Resumen ajuste de protecciones sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW conectados al SDL"
         if es_menor_025 else
-        r"Resumen ajuste de protecciones sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL (Tabla 12 Acuerdo CNO 2233)"
+        r"Resumen ajuste de protecciones sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL"
     )
+    caption_resumen_totales = str(params.get("tabla_resumen_caption") or params.get("caption_resumen_totales") or default_caption_resumen).strip()
 
     intro_cno_txt = params.get(
         "intro_cno_txt",
@@ -1182,7 +1188,7 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
 
 \\begin{{table}}[h!]
     \\centering
-    \\captionof{{table}}{{Resumen ajuste de protecciones sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL}}
+    \\captionof{{table}}{{{caption_resumen_totales}}}
     \\label{{tab:resumenajustestotales}}
     \\begingroup
     \\adjustbox{{max width=\\textwidth}}{{%
@@ -1264,7 +1270,7 @@ Con el fin de verificar las protecciones se presenta la siguiente información t
 \\begin{{center}}
     \\begin{{minipage}}{{1\\textwidth}}
         \\centering
-        \\captionof{{table}}{{Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal mayor > 0,25 MW.}}
+        \\captionof{{table}}{{{caption_func_cno}}}
         \\label{{tab:funciones_proteccion}}
         \\begingroup
         \\adjustbox{{max width=\\textwidth}}{{%
@@ -1291,7 +1297,7 @@ Conforme a las notas del acuerdo CNO, se tienen las siguientes observaciones sob
 
 \\begin{{table}}[h!]
     \\centering
-    \\captionof{{table}}{{Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL}}
+    \\captionof{{table}}{{{caption_ajustes_cno}}}
     \\label{{tab:AjustesproteccionCNO}}
     \\begingroup
     \\adjustbox{{max width=\\textwidth}}{{%

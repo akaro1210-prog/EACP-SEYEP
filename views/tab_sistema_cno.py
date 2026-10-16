@@ -39,8 +39,8 @@ def render(config_vars=None):
         horizontal=True,
         key=f"rad_ac_{ver}"
     )
-    es_048 = plantilla_ac.startswith("Configuración 0,48")
 
+    es_048 = plantilla_ac.startswith("Configuración 0,48")
     c1, c2, c3 = st.columns(3)
     with c1:
         ac_fases = st.text_input("Sistema AC:", value=obtener_val("ac_fases", r"$3~\phi$"), key=f"ac_fases_{ver}")
@@ -63,7 +63,6 @@ def render(config_vars=None):
     )
 
     st.markdown("---")
-
     # =========================================================================
     # 1.1 SUBSECCIÓN: PROTECCIONES SISTÉMICAS CNO 2233
     # =========================================================================
@@ -96,11 +95,19 @@ def render(config_vars=None):
     col_t2_head, col_t2_btn = st.columns([3.5, 1.2])
     with col_t2_head:
         st.markdown(f"#### Tabla 2: Funciones de protección mínimas — **{info_rango['tabla_funciones_num']} CNO 2233** (`tab:funciones_proteccion`)")
-        st.caption(f"Normativa CNO: {info_rango['tabla_funciones_caption']}")
     with col_t2_btn:
         if st.button("🔄 Restaurar Tabla CNO", key=f"btn_res_func_{ver}", help="Restablece los valores estándar del CNO 2233 para este rango"):
             st.session_state["df_funciones_prot"] = pd.DataFrame(datos_normativos["df_funciones_prot"])
+            st.session_state["tabla_funciones_caption"] = datos_normativos["tabla_funciones_caption"]
             st.rerun()
+
+    caption_func_cno = st.text_input(
+        "Título de la Tabla 2 en LaTeX (\\captionof{table}):",
+        value=st.session_state.get("tabla_funciones_caption", datos_normativos["tabla_funciones_caption"]),
+        key=f"cap_func_cno_input_{ver}_{clave_rango}",
+        help="Título formal que aparecerá en el encabezado de la Tabla 2 y en el Índice de Tablas del informe."
+    )
+    st.session_state["tabla_funciones_caption"] = caption_func_cno
 
     # Obtener el DataFrame de sesión o cargar el por defecto del rango
     df_func_actual = st.session_state.get("df_funciones_prot")
@@ -142,11 +149,19 @@ def render(config_vars=None):
     col_t3_head, col_t3_btn = st.columns([3.5, 1.2])
     with col_t3_head:
         st.markdown(f"#### Tabla 3: Ajuste de protecciones recomendados — **{info_rango['tabla_ajustes_num']} CNO 2233** (`tab:AjustesproteccionCNO`)")
-        st.caption(f"Normativa CNO: {info_rango['tabla_ajustes_caption']}")
     with col_t3_btn:
         if st.button("🔄 Restaurar Ajustes CNO", key=f"btn_res_ajust_{ver}", help="Restablece los ajustes recomendados del CNO 2233 para este rango"):
             st.session_state["df_ajustes_cno"] = pd.DataFrame(datos_normativos["df_ajustes_cno"])
+            st.session_state["tabla_ajustes_caption"] = datos_normativos["tabla_ajustes_caption"]
             st.rerun()
+
+    caption_ajustes_cno = st.text_input(
+        "Título de la Tabla 3 en LaTeX (\\captionof{table}):",
+        value=st.session_state.get("tabla_ajustes_caption", datos_normativos["tabla_ajustes_caption"]),
+        key=f"cap_ajustes_cno_input_{ver}_{clave_rango}",
+        help="Título formal que aparecerá en el encabezado de la Tabla 3 y en el Índice de Tablas del informe."
+    )
+    st.session_state["tabla_ajustes_caption"] = caption_ajustes_cno
 
     df_ajustes_actual = st.session_state.get("df_ajustes_cno")
     if df_ajustes_actual is None or not isinstance(df_ajustes_actual, pd.DataFrame):
@@ -189,8 +204,8 @@ def render(config_vars=None):
         "rango_potencia_cno": clave_rango,
         "tabla_funciones_num": info_rango["tabla_funciones_num"],
         "tabla_ajustes_num": info_rango["tabla_ajustes_num"],
-        "tabla_funciones_caption": info_rango["tabla_funciones_caption"],
-        "tabla_ajustes_caption": info_rango["tabla_ajustes_caption"],
+        "tabla_funciones_caption": caption_func_cno,
+        "tabla_ajustes_caption": caption_ajustes_cno,
     }
     st.session_state["datos_sistema_cno"] = datos
     return datos

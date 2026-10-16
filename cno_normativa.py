@@ -1,9 +1,8 @@
 """
 Módulo de definiciones normativas del Acuerdo CNO 2233 de 2026
 para el Estudio de Ajuste y Coordinación de Protecciones (ANEXO EACP).
-
-Diferencia requisitos por rango de potencia de sistemas de generación
-basados en inversores fotovoltaicos conectados al SDL (Niveles 1, 2 y 3).
+Diferencia requisitos y títulos formales de las tablas por rango de potencia
+de sistemas de generación basados en inversores conectados al SDL.
 """
 
 RANGOS_POTENCIA_CNO = {
@@ -12,9 +11,10 @@ RANGOS_POTENCIA_CNO = {
         "nombre": "P ≤ 0.25 MW (Capacidad instalada o nominal ≤ 250 kW)",
         "descripcion": "Aplica Tabla 6 (Funciones mínimas a nivel de inversor) y Tabla 11 (Ajustes recomendados).",
         "tabla_funciones_num": "Tabla 6",
-        "tabla_funciones_caption": "Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal $\\leq$ 0,25 MW (Tabla 6 Acuerdo CNO 2233)",
+        "tabla_funciones_caption": r"Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW.",
         "tabla_ajustes_num": "Tabla 11",
-        "tabla_ajustes_caption": "Ajuste de protecciones sistémicas para generación basada en inversores y frecuencia variable de capacidad instalada o nominal $\\leq$ 0,25 MW conectados al SDL (Tabla 11 Acuerdo CNO 2233)",
+        "tabla_ajustes_caption": r"Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW conectados al SDL",
+        "tabla_resumen_caption": r"Resumen ajuste de protecciones sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW conectados al SDL",
         "equipo_corte": "Interruptor termomagnético o Interruptor con unidades de disparo (Tabla 15/16, Nota v)",
         "anti_isla_respaldo": "Opcional a nivel de inversor (IEC 62116 / UL 1741, Nota q)",
         "soe_comtrade": "No obligatorio SOE ni COMTRADE (numeral 8 CNO 2233)",
@@ -25,9 +25,10 @@ RANGOS_POTENCIA_CNO = {
         "nombre": "0.25 MW < P ≤ 1.0 MW (Capacidad entre 250 kW y 1000 kW)",
         "descripcion": "Aplica Tabla 7 (Funciones mínimas en PC) y Tabla 12 (Ajustes recomendados). Respaldo anti-isla opcional.",
         "tabla_funciones_num": "Tabla 7",
-        "tabla_funciones_caption": "Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal mayor > 0,25 MW (Tabla 7 Acuerdo CNO 2233)",
+        "tabla_funciones_caption": r"Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal mayor > 0,25 MW.",
         "tabla_ajustes_num": "Tabla 12",
-        "tabla_ajustes_caption": "Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL (Tabla 12 Acuerdo CNO 2233)",
+        "tabla_ajustes_caption": r"Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL",
+        "tabla_resumen_caption": r"Resumen ajuste de protecciones sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL",
         "equipo_corte": "Interruptor con unidades de disparo, Reconectador o Interruptor de potencia (Tabla 15, Nota t)",
         "anti_isla_respaldo": "Principal obligatoria (Intertrip o lógica compuesta); Respaldo opcional (Nota q)",
         "soe_comtrade": "SOE obligatorio con resolución ≤ 1 ms. Registros oscilográficos COMTRADE según acuerdo con OR.",
@@ -38,9 +39,10 @@ RANGOS_POTENCIA_CNO = {
         "nombre": "1.0 MW < P < 5.0 MW (Capacidad entre 1 MW y 5 MW)",
         "descripcion": "Aplica Tabla 7 y Tabla 12. Requiere Anti-Isla Principal y Respaldo obligatorio, y COMTRADE a 960 Hz.",
         "tabla_funciones_num": "Tabla 7",
-        "tabla_funciones_caption": "Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal mayor > 0,25 MW (Tabla 7 Acuerdo CNO 2233)",
+        "tabla_funciones_caption": r"Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal mayor > 0,25 MW.",
         "tabla_ajustes_num": "Tabla 12",
-        "tabla_ajustes_caption": "Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL (Tabla 12 Acuerdo CNO 2233)",
+        "tabla_ajustes_caption": r"Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL",
+        "tabla_resumen_caption": r"Resumen ajuste de protecciones sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL",
         "equipo_corte": "Reconectador o Interruptor de potencia en el PC (Tabla 15, Nota u)",
         "anti_isla_respaldo": "MANDATORIO: Protección Anti-isla Principal Y Respaldo (Nota q CNO 2233)",
         "soe_comtrade": "MANDATORIO: SOE (≤ 1 ms) y registros oscilográficos COMTRADE a 960 Hz en el PC (numeral 8)",
@@ -51,9 +53,10 @@ RANGOS_POTENCIA_CNO = {
         "nombre": "P ≥ 5.0 MW (Gran Escala SDL / CREG 148 de 2021)",
         "descripcion": "Aplica Tabla 7 y Tabla 12 con respaldo ANSI 50BF en PC, servicios auxiliares propios y curva FRT CREG 148.",
         "tabla_funciones_num": "Tabla 7",
-        "tabla_funciones_caption": "Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal mayor > 0,25 MW (Tabla 7 Acuerdo CNO 2233)",
+        "tabla_funciones_caption": r"Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal mayor > 0,25 MW.",
         "tabla_ajustes_num": "Tabla 12",
-        "tabla_ajustes_caption": "Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL (Tabla 12 Acuerdo CNO 2233)",
+        "tabla_ajustes_caption": r"Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL",
+        "tabla_resumen_caption": r"Resumen ajuste de protecciones sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL",
         "equipo_corte": "Interruptor de potencia en bahía de generación dedicada (numeral 6.2 y 7.4)",
         "anti_isla_respaldo": "MANDATORIO: Esquema Intertrip principal y función de respaldo asistida (Notas i y q)",
         "soe_comtrade": "MANDATORIO: SOE y COMTRADE con sincronización horaria satelital oficial colombiana (≤ ±200 ms)",
@@ -106,7 +109,7 @@ TABLA_12_DEFAULT = [
 
 
 def obtener_datos_tablas_cno(clave_rango: str):
-    """Retorna las tablas por defecto, textos y etiquetas según el rango seleccionado."""
+    """Retorna las tablas por defecto, textos, notas y títulos según el rango seleccionado."""
     es_menor_igual_025 = (clave_rango == "P_LE_025")
     info_rango = RANGOS_POTENCIA_CNO.get(clave_rango, RANGOS_POTENCIA_CNO["P_025_TO_1"])
 
@@ -145,4 +148,5 @@ def obtener_datos_tablas_cno(clave_rango: str):
         "tabla_funciones_caption": info_rango["tabla_funciones_caption"],
         "tabla_ajustes_num": info_rango["tabla_ajustes_num"],
         "tabla_ajustes_caption": info_rango["tabla_ajustes_caption"],
+        "tabla_resumen_caption": info_rango["tabla_resumen_caption"],
     }
