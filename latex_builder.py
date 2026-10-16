@@ -1128,7 +1128,7 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
             Tensión de Línea [kV] & {ac_tension_kv} \\\\ \\hline
             Intensidad máxima [A] & {ac_corriente_max} \\\\ \\hline
             Factor de carga continua & {ac_factor_carga} \\\\ \\hline
-            Protección en tablero principal ($\\text{{I}}_{{\\text{{max}}}} \\times 1,25$) [A] & {ac_proteccion_tablero} \\\\ \\hline
+            Protección en tablero principal ($\\text{{I}}_{{\\text{{max}}}} \\times Factor Carga Continua$) [A] & {ac_proteccion_tablero} \\\\ \\hline
         \\end{{tabular}}%
         }}
         \\endgroup{bloque_nota_ac}
