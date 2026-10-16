@@ -340,9 +340,33 @@ def compilar_estudio_latex(params):
         \\textbf{{\\textit{{{ac_nota_pie}}}}}\\par
         }}"""
 
+    clave_rango_cno = params.get("rango_potencia_cno", "P_025_TO_1")
+    es_menor_025 = (clave_rango_cno == "P_LE_025")
+
+    caption_func_cno = params.get(
+        "tabla_funciones_caption",
+        r"Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW (Tabla 6 Acuerdo CNO 2233)" if es_menor_025
+        else r"Funciones de protección mínimas para sistemas de generación basados en inversores y frecuencia variable de capacidad instalada o nominal mayor > 0,25 MW (Tabla 7 Acuerdo CNO 2233)"
+    )
+    caption_ajustes_cno = params.get(
+        "tabla_ajustes_caption",
+        r"Ajuste de protecciones sistémicas para generación basada en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW conectados al SDL (Tabla 11 Acuerdo CNO 2233)" if es_menor_025
+        else r"Ajuste de protección sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL (Tabla 12 Acuerdo CNO 2233)"
+    )
+    texto_intro_ajustes = (
+        r"A continuación, se presenta el ajuste de protecciones de tensión y frecuencia con los respectivos tiempos de disparo recomendados por el acuerdo CNO 2233 para los sistemas de generación basados en inversores menores o iguales a 0.25 MW (Tabla 11):\\"
+        if es_menor_025 else
+        r"A continuación, se presenta el ajuste de protecciones de tensión y frecuencia con los respectivos tiempos de disparo recomendados por el acuerdo CNO 2233 para los sistemas de generación basados en inversores mayores a 0.25 MW (Tabla 12):\\"
+    )
+    caption_resumen_totales = (
+        r"Resumen ajuste de protecciones sistemáticas para generación basada en inversores y frecuencia variable de capacidad instalada o nominal $\leq$ 0,25 MW conectados al SDL (Tabla 11 Acuerdo CNO 2233)"
+        if es_menor_025 else
+        r"Resumen ajuste de protecciones sistemáticas para generadores basados en inversores y frecuencia variable de capacidad instalada o nominal > 0,25 MW conectados al SDL (Tabla 12 Acuerdo CNO 2233)"
+    )
+
     intro_cno_txt = params.get(
         "intro_cno_txt",
-        "Todo el sistema de generación basados en inversores y frecuencia variable conectado a los niveles 1, 2 y 3 deberán disponer de un esquema de protección para proteger la instalación del generador y su punto de conexión con el sistema de distribución local, los cuales deberán ser selectivos y coordinar con la red existente, según el acuerdo CNO 2233 de 2026."
+        ("Todo sistema de generación basados en inversores y frecuencia variable de capacidad instalada o nominal menor o igual a 0.25 MW (≤ 0.25 MW) conectado a los niveles 1, 2 y 3 deberá disponer de funciones de protección disponibles a nivel de inversor conforme a la Tabla 6 del Acuerdo CNO 2233 de 2026, coordinando oportunamente con la red del OR." if es_menor_025 else "Todo el sistema de generación basados en inversores y frecuencia variable conectado a los niveles 1, 2 y 3 deberán disponer de un esquema de protección para proteger la instalación del generador y su punto de conexión con el sistema de distribución local, los cuales deberán ser selectivos y coordinar con la red existente, según el acuerdo CNO 2233 de 2026.")
     )
 
     df_func_prot = params.get("df_funciones_prot", None)
@@ -355,16 +379,27 @@ def compilar_estudio_latex(params):
             c4 = escapar_latex(r.get("Notas", ""))
             filas_func_prot.append(f"            {c1} & {c2} & {c3} & {c4} \\\\ \\hline")
     if not filas_func_prot:
-        filas_func_prot = [
-            "            Baja tensión (ANSI 27) & X & & m \\\\ \\hline",
-            "            Sobretensión adelante (ANSI 32) & X & & k \\\\ \\hline",
-            "            Sobrecorriente de fases y tierra & X & & l \\\\ \\hline",
-            "            Sobretensión (ANSI 59) & X & & m \\\\ \\hline",
-            "            Sobretensión de secuencia cero (ANSI 59N) & X & & n \\\\ \\hline",
-            "            Frecuencia (ANSI 81U/O) & & & p \\\\ \\hline",
-            "            Anti - isla & X & & q \\\\ \\hline",
-            "            Verificación de sincronismo & X & & r \\\\ \\hline",
-        ]
+        if es_menor_025:
+            filas_func_prot = [
+                "            Bajatensión (ANSI 27) & & X & m \\\\ \\hline",
+                "            Sobrepotencia adelante (ANSI 32) & X & & k \\\\ \\hline",
+                "            Sobrecorriente de fases y tierra & & & l \\\\ \\hline",
+                "            Sobretensión (ANSI 59) & & X & m \\\\ \\hline",
+                "            Frecuencia (ANSI 81U/O) & & X & p \\\\ \\hline",
+                "            Anti - isla & & X & q \\\\ \\hline",
+                "            Verificación de sincronismo & & & r \\\\ \\hline",
+            ]
+        else:
+            filas_func_prot = [
+                "            Bajatensión (ANSI 27) & X & & m \\\\ \\hline",
+                "            Sobrepotencia adelante (ANSI 32) & X & & k \\\\ \\hline",
+                "            Sobrecorriente de fases y tierra & X & & l \\\\ \\hline",
+                "            Sobretensión (ANSI 59) & X & & m \\\\ \\hline",
+                "            Sobretensión de secuencia cero (ANSI 59N) & X & & n \\\\ \\hline",
+                "            Frecuencia (ANSI 81U/O) & & & p \\\\ \\hline",
+                "            Anti - isla & X & & q \\\\ \\hline",
+                "            Verificación sincronismo/Chequeo energización & X & & r \\\\ \\hline",
+            ]
     contenido_filas_func_prot = "\n".join(filas_func_prot)
 
     obs_cno_1 = params.get(
@@ -390,14 +425,24 @@ def compilar_estudio_latex(params):
             f_obs = escapar_latex(r.get("Observaciones", ""))
             filas_ajustes_cno.append(f"            {f_nom} & {f_aj} & {f_tmp} & {f_obs} \\\\ \\hline")
     if not filas_ajustes_cno:
-        filas_ajustes_cno = [
-            r"            Etapa 1: Baja tensión (ANSI 27) & $\leq$ 0.6 p.u & Ver nota & Actuación segregada por fase o trifásica \\ \hline",
-            r"            Etapa 2: Baja tensión (ANSI 27) & $\leq$ 0.4 p.u & Ver nota & Actuación segregada por fase o trifásica \\ \hline",
-            r"            Etapa 1: Sobretensión (ANSI 59) & $\geq$ 1.22 p.u & $\geq$ 2.5 s & Actuación trifásica \\ \hline",
-            r"            Etapa 2: Sobretensión (ANSI 59) & $\geq$ 1.25 p.u & $\geq$ 0.5 s & Actuación trifásica \\ \hline",
-            r"            Bajafrecuencia (ANSI 81U) & 57 Hz & $\geq$ 0.2 s & Actuación tensiones F-T \\ \hline",
-            r"            Sobrefrecuencia (ANSI 81O) & 63 Hz & $\geq$ 0.2 s & Actuación tensiones F-T \\ \hline",
-        ]
+        if es_menor_025:
+            filas_ajustes_cno = [
+                r"            Etapa 1: Bajatensión (ANSI 27) & $\leq$ 0.85 p.u. & $\geq$ 2 s & Coordinada con protecciones sobrecorriente OR \\ \hline",
+                r"            Etapa 2: Bajatensión (ANSI 27)* & $\leq$ 0.5 p.u. & $\geq$ 0.2 s & Garantiza protección del inversor \\ \hline",
+                r"            Etapa 1: Sobretensión (ANSI 59) & $\geq$ 1.15 p.u. & $\geq$ 2 s & Actuación trifásica \\ \hline",
+                r"            Etapa 2: Sobretensión (ANSI 59) & $\geq$ 1.2 p.u. & $\geq$ 0.2 s & Actuación trifásica \\ \hline",
+                r"            Bajafrecuencia (ANSI 81 U) & 57 Hz & $\geq$ 0.2 s & Actuación en inversores (F-T o F-F) \\ \hline",
+                r"            Sobrefrecuencia (ANSI 81 O) & 63 Hz & $\geq$ 0.2 s & Actuación en inversores (F-T o F-F) \\ \hline",
+            ]
+        else:
+            filas_ajustes_cno = [
+                r"            Etapa 1: Baja tensión (ANSI 27) & $\leq$ 0.6 p.u & Ver nota & Actuación segregada por fase o trifásica \\ \hline",
+                r"            Etapa 2: Baja tensión (ANSI 27) & $\leq$ 0.4 p.u & Ver nota & Actuación segregada por fase o trifásica \\ \hline",
+                r"            Etapa 1: Sobretensión (ANSI 59) & $\geq$ 1.22 p.u & $\geq$ 2.5 s & Actuación trifásica \\ \hline",
+                r"            Etapa 2: Sobretensión (ANSI 59) & $\geq$ 1.25 p.u & $\geq$ 0.5 s & Actuación trifásica \\ \hline",
+                r"            Bajafrecuencia (ANSI 81U) & 57 Hz & $\geq$ 0.2 s & Actuación tensiones F-T \\ \hline",
+                r"            Sobrefrecuencia (ANSI 81O) & 63 Hz & $\geq$ 0.2 s & Actuación tensiones F-T \\ \hline",
+            ]
     contenido_filas_ajustes_cno = "\n".join(filas_ajustes_cno)
 
     # 4. Secciones 1.2 (27/59), 1.3 (59N) y 1.4 (Anti-Isla)
@@ -1242,7 +1287,7 @@ Conforme a las notas del acuerdo CNO, se tienen las siguientes observaciones sob
     \\item {{{obs_cno_2}}}
 \\end{{itemize}}
 
-A continuación, se presenta el ajuste de protecciones de tensión y frecuencia con los respectivos tiempos de disparo recomendados por el acuerdo CNO 2233 para los sistemas de generación basados en inversores mayores a 0.25 MW.\\\\
+{texto_intro_ajustes}
 
 \\begin{{table}}[h!]
     \\centering

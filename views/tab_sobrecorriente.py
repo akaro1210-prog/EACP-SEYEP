@@ -256,18 +256,34 @@ def render():
             key=f"ed_breaker_proy_eacp_{ver}"
         )
 
-    st.markdown("#### Tabla `tab:resumenajustestotales` (Resumen ajuste de protecciones sistemáticas)")
-    df_sist_default = pd.DataFrame([
-        {"Función": "Etapa 1: Baja tensión (ANSI 27)", "Ajustes": "0.6 p.u", "Temporización": "2 s"},
-        {"Función": "Etapa 2: Baja tensión (ANSI 27)", "Ajustes": "0.4 p.u", "Temporización": "1.5 s"},
-        {"Función": "Etapa 1: Sobretensión (ANSI 59)", "Ajustes": "1.22 p.u", "Temporización": "2.5 s"},
-        {"Función": "Etapa 2: Sobretensión (ANSI 59)", "Ajustes": "1.25 p.u", "Temporización": "0.5 s"},
-        {"Función": "Sobretensión de neutro (ANSI 59N)", "Ajustes": "0.3 p.u", "Temporización": "2 s"},
-        {"Función": "Bajafrecuencia (ANSI 81U)", "Ajustes": "57 Hz", "Temporización": "0.2 s"},
-        {"Función": "Sobrefrecuencia (ANSI 81O)", "Ajustes": "63 Hz", "Temporización": "0.2 s"},
-        {"Función": "Anti-isla", "Ajustes": "Lógica compuesta con señales de tensión y frecuencia", "Temporización": "500ms"},
-        {"Función": "Verificación de sincronismo", "Ajustes": "Condición barra viva OR - Línea muerta PV umbral de tensión 0.8p.u", "Temporización": "NA"},
-    ])
+    rango_pot_eacp = st.session_state.get("rango_potencia_cno", "P_025_TO_1")
+    es_le_025 = (rango_pot_eacp == "P_LE_025")
+    etiqueta_rango_resumen = "(Tabla 11 CNO 2233 - P ≤ 0.25 MW)" if es_le_025 else "(Tabla 12 CNO 2233 - P > 0.25 MW)"
+
+    st.markdown(f"#### Tabla `tab:resumenajustestotales` {etiqueta_rango_resumen}")
+    if es_le_025:
+        df_sist_default = pd.DataFrame([
+            {"Función": "Etapa 1: Bajatensión (ANSI 27)", "Ajustes": "≤ 0.85 p.u", "Temporización": "≥ 2 s"},
+            {"Función": "Etapa 2: Bajatensión (ANSI 27)*", "Ajustes": "≤ 0.5 p.u", "Temporización": "≥ 0.2 s"},
+            {"Función": "Etapa 1: Sobretensión (ANSI 59)", "Ajustes": "≥ 1.15 p.u", "Temporización": "≥ 2 s"},
+            {"Función": "Etapa 2: Sobretensión (ANSI 59)", "Ajustes": "≥ 1.2 p.u", "Temporización": "≥ 0.2 s"},
+            {"Función": "Bajafrecuencia (ANSI 81U)", "Ajustes": "57 Hz", "Temporización": "≥ 0.2 s"},
+            {"Función": "Sobrefrecuencia (ANSI 81O)", "Ajustes": "63 Hz", "Temporización": "≥ 0.2 s"},
+            {"Función": "Anti-isla", "Ajustes": "Protección activa en inversor (IEC 62116)", "Temporización": "≤ 2.0 s"},
+            {"Función": "Verificación de sincronismo", "Ajustes": "Sincronización automática de inversor (IEEE 1547)", "Temporización": "NA"},
+        ])
+    else:
+        df_sist_default = pd.DataFrame([
+            {"Función": "Etapa 1: Baja tensión (ANSI 27)", "Ajustes": "0.6 p.u", "Temporización": "2 s"},
+            {"Función": "Etapa 2: Baja tensión (ANSI 27)", "Ajustes": "0.4 p.u", "Temporización": "1.5 s"},
+            {"Función": "Etapa 1: Sobretensión (ANSI 59)", "Ajustes": "1.22 p.u", "Temporización": "2.5 s"},
+            {"Función": "Etapa 2: Sobretensión (ANSI 59)", "Ajustes": "1.25 p.u", "Temporización": "0.5 s"},
+            {"Función": "Sobretensión de neutro (ANSI 59N)", "Ajustes": "0.3 p.u", "Temporización": "2 s"},
+            {"Función": "Bajafrecuencia (ANSI 81U)", "Ajustes": "57 Hz", "Temporización": "0.2 s"},
+            {"Función": "Sobrefrecuencia (ANSI 81O)", "Ajustes": "63 Hz", "Temporización": "0.2 s"},
+            {"Función": "Anti-isla", "Ajustes": "Lógica compuesta con señales de tensión y frecuencia", "Temporización": "500ms"},
+            {"Función": "Verificación de sincronismo", "Ajustes": "Condición barra viva OR - Línea muerta PV umbral de tensión 0.8p.u", "Temporización": "NA"},
+        ])
     df_resumen_totales = st.data_editor(
         obtener_df("df_resumen_totales", df_sist_default),
         num_rows="dynamic",

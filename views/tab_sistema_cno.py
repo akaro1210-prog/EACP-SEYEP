@@ -1,12 +1,33 @@
 import streamlit as st
 import pandas as pd
-from project_manager import obtener_val, obtener_df, obtener_ver
+from project_manager import obtener_val, obtener_ver
+from cno_normativa import RANGOS_POTENCIA_CNO, obtener_datos_tablas_cno
 
-def render():
+
+def render(config_vars=None):
     ver = obtener_ver()
-    st.subheader("⚡ Sección 1 y 1.1: Sistema AC (`\\sistemaAC`) y Protecciones Sistémicas CNO 2233")
-    st.write("Configura los parámetros de la Tabla 1 (**Sistema AC**) y las tablas normativas de funciones de protección mínimas del Acuerdo CNO 2233.")
+    if config_vars is None:
+        config_vars = st.session_state.get("config_vars", {})
 
+    # Detectar el rango de potencia activo
+    clave_rango = config_vars.get("rango_potencia_cno", st.session_state.get("rango_potencia_cno", "P_025_TO_1"))
+    datos_normativos = obtener_datos_tablas_cno(clave_rango)
+    info_rango = datos_normativos["info_rango"]
+    es_menor_025 = datos_normativos["es_menor_igual_025"]
+
+    st.subheader("⚡ Sección 1 y 1.1: Sistema AC (`\\sistemaAC`) y Protecciones Sistémicas CNO 2233")
+    
+    # Banner indicativo del rango normativo en uso
+    st.info(
+        f"🎯 **Régimen de Capacidad CNO 2233 en uso:** **{info_rango['nombre']}**\n\n"
+        f"Se aplican automáticamente los requerimientos de la **{info_rango['tabla_funciones_num']}** "
+        f"(Funciones mínimas) y la **{info_rango['tabla_ajustes_num']}** (Ajustes recomendados). "
+        f"Puedes cambiar el rango en la **Pestaña 1 (Variables)** si tu proyecto tiene una potencia diferente."
+    )
+
+    # =========================================================================
+    # 1. COMANDO \sistemaAC (TABLA 1)
+    # =========================================================================
     st.markdown("### 1. Comando `\\sistemaAC` (Tabla 1: Sistema AC)")
     plantilla_ac = st.radio(
         "Plantilla rápida de Sistema AC:",
@@ -18,7 +39,6 @@ def render():
         horizontal=True,
         key=f"rad_ac_{ver}"
     )
-
     es_048 = plantilla_ac.startswith("Configuración 0,48")
 
     c1, c2, c3 = st.columns(3)
@@ -43,62 +63,115 @@ def render():
     )
 
     st.markdown("---")
+
+    # =========================================================================
+    # 1.1 SUBSECCIÓN: PROTECCIONES SISTÉMICAS CNO 2233
+    # =========================================================================
     st.markdown("### 1.1 Subsección: *Protecciones sistémicas a implementar en el proyecto*")
 
-    intro_cno_default = (
-        "Todo el sistema de generación basados en inversores y frecuencia variable conectado a los niveles 1, 2 y 3 "
-        "deberán disponer de un esquema de protección para proteger la instalación del generador y su punto de conexión "
-        "con el sistema de distribución local, los cuales deberán ser selectivos y coordinar con la red existente, "
-        "según el acuerdo CNO 2233 de 2026."
-    )
-    intro_cno_txt = st.text_area("Párrafo introductorio 1.1:", value=obtener_val("intro_cno_txt", intro_cno_default), height=80, key=f"int_cno_{ver}")
+    if es_menor_025:
+        intro_cno_default = (
+            "Todo sistema de generación basados en inversores y frecuencia variable de capacidad instalada o nominal "
+            "menor o igual a 0.25 MW (≤ 0.25 MW) conectado a los niveles 1, 2 y 3 deberá disponer de funciones de protección "
+            "disponibles a nivel de inversor conforme a la Tabla 6 del Acuerdo CNO 2233 de 2026, coordinando oportunamente con la red del OR."
+        )
+    else:
+        intro_cno_default = (
+            "Todo sistema de generación basados en inversores y frecuencia variable conectado a los niveles 1, 2 y 3 "
+            "deberán disponer de un esquema de protección para proteger la instalación del generador y su punto de conexión "
+            "con el sistema de distribución local, los cuales deberán ser selectivos y coordinar con la red existente, "
+            "según el acuerdo CNO 2233 de 2026."
+        )
 
-    st.markdown("#### Tabla 2: Funciones de protección mínimas (`tab:funciones_proteccion`)")
-    df_func_default = pd.DataFrame([
-        {"Función de protección": "Baja tensión (ANSI 27)", "PC": "X", "UG": "", "Notas": "m"},
-        {"Función de protección": "Sobretensión adelante (ANSI 32)", "PC": "X", "UG": "", "Notas": "k"},
-        {"Función de protección": "Sobrecorriente de fases y tierra", "PC": "X", "UG": "", "Notas": "l"},
-        {"Función de protección": "Sobretensión (ANSI 59)", "PC": "X", "UG": "", "Notas": "m"},
-        {"Función de protección": "Sobretensión de secuencia cero (ANSI 59N)", "PC": "X", "UG": "", "Notas": "n"},
-        {"Función de protección": "Frecuencia (ANSI 81U/O)", "PC": "", "UG": "", "Notas": "p"},
-        {"Función de protección": "Anti - isla", "PC": "X", "UG": "", "Notas": "q"},
-        {"Función de protección": "Verificación de sincronismo", "PC": "X", "UG": "", "Notas": "r"},
-    ])
+    intro_cno_txt = st.text_area(
+        "Párrafo introductorio 1.1:",
+        value=obtener_val("intro_cno_txt", intro_cno_default),
+        height=80,
+        key=f"int_cno_{ver}"
+    )
+
+    # -------------------------------------------------------------------------
+    # TABLA 2 (Tabla 6 o 7 de CNO 2233 según el rango)
+    # -------------------------------------------------------------------------
+    col_t2_head, col_t2_btn = st.columns([3.5, 1.2])
+    with col_t2_head:
+        st.markdown(f"#### Tabla 2: Funciones de protección mínimas — **{info_rango['tabla_funciones_num']} CNO 2233** (`tab:funciones_proteccion`)")
+        st.caption(f"Normativa CNO: {info_rango['tabla_funciones_caption']}")
+    with col_t2_btn:
+        if st.button("🔄 Restaurar Tabla CNO", key=f"btn_res_func_{ver}", help="Restablece los valores estándar del CNO 2233 para este rango"):
+            st.session_state["df_funciones_prot"] = pd.DataFrame(datos_normativos["df_funciones_prot"])
+            st.rerun()
+
+    # Obtener el DataFrame de sesión o cargar el por defecto del rango
+    df_func_actual = st.session_state.get("df_funciones_prot")
+    if df_func_actual is None or not isinstance(df_func_actual, pd.DataFrame):
+        df_func_actual = pd.DataFrame(datos_normativos["df_funciones_prot"])
+
     df_funciones_prot = st.data_editor(
-        obtener_df("df_funciones_prot", df_func_default),
+        df_func_actual,
         num_rows="dynamic",
         use_container_width=True,
-        key=f"editor_func_prot_eacp_{ver}"
+        key=f"editor_func_prot_eacp_{ver}_{clave_rango}"
     )
+    st.session_state["df_funciones_prot"] = df_funciones_prot
 
+    # -------------------------------------------------------------------------
+    # OBSERVACIONES CONFORME A LAS NOTAS DEL ACUERDO CNO
+    # -------------------------------------------------------------------------
     st.markdown("#### Observaciones conforme a las notas del acuerdo CNO")
-    obs_1_default = (
-        "La protección ANSI 32 no aplica, dado que el proyecto es un generador distribuido, y esta función "
-        "aplicará solo para autogeneradores con o sin entregar excedentes a la red."
-    )
-    obs_2_default = (
-        "Para la verificación de sincronismo, conforme a la nota “r” del acuerdo se implementará en el PC la función 25 "
-        "configurando solamente la condición de Barra viva OR - Línea muerta PV, con un umbral mínimo de tensión de 0.8 p.u "
-        "que garantice que el sistema no permitirá energización cuando el sistema del OR se encuentre sin tensión"
-    )
-    obs_cno_1 = st.text_area("Viñeta 1 (ANSI 32):", value=obtener_val("obs_cno_1", obs_1_default), height=70, key=f"obs1_{ver}")
-    obs_cno_2 = st.text_area("Viñeta 2 (Función 25 Sincronismo):", value=obtener_val("obs_cno_2", obs_2_default), height=80, key=f"obs2_{ver}")
+    c_obs1, c_obs2 = st.columns(2)
+    with c_obs1:
+        obs_cno_1 = st.text_area(
+            "Viñeta 1 (Función ANSI 32 / Excedentes - Nota k):",
+            value=obtener_val("obs_cno_1", datos_normativos["obs_cno_1"]),
+            height=85,
+            key=f"obs1_{ver}"
+        )
+    with c_obs2:
+        obs_cno_2 = st.text_area(
+            "Viñeta 2 (Verificación de Sincronismo - Nota r):",
+            value=obtener_val("obs_cno_2", datos_normativos["obs_cno_2"]),
+            height=85,
+            key=f"obs2_{ver}"
+        )
 
-    st.markdown("#### Tabla 3: Ajuste de protecciones sistemáticas recomendados CNO 2233 (`tab:AjustesproteccionCNO`)")
-    df_cno_default = pd.DataFrame([
-        {"Función": "Etapa 1: Baja tensión (ANSI 27)", "Ajustes": r"$\leq$ 0.6 p.u", "Temporización": "Ver nota", "Observaciones": "Actuación segregada por fase o trifásica"},
-        {"Función": "Etapa 2: Baja tensión (ANSI 27)", "Ajustes": r"$\leq$ 0.4 p.u", "Temporización": "Ver nota", "Observaciones": "Actuación segregada por fase o trifásica"},
-        {"Función": "Etapa 1: Sobretensión (ANSI 59)", "Ajustes": r"$\geq$ 1.22 p.u", "Temporización": r"$\geq$ 2.5 s", "Observaciones": "Actuación trifásica"},
-        {"Función": "Etapa 2: Sobretensión (ANSI 59)", "Ajustes": r"$\geq$ 1.25 p.u", "Temporización": r"$\geq$ 0.5 s", "Observaciones": "Actuación trifásica"},
-        {"Función": "Bajafrecuencia (ANSI 81U)", "Ajustes": "57 Hz", "Temporización": r"$\geq$ 0.2 s", "Observaciones": "Actuación tensiones F-T"},
-        {"Función": "Sobrefrecuencia (ANSI 81O)", "Ajustes": "63 Hz", "Temporización": r"$\geq$ 0.2 s", "Observaciones": "Actuación tensiones F-T"},
-    ])
+    # -------------------------------------------------------------------------
+    # TABLA 3 (Tabla 11 o 12 de CNO 2233 según el rango)
+    # -------------------------------------------------------------------------
+    st.markdown("---")
+    col_t3_head, col_t3_btn = st.columns([3.5, 1.2])
+    with col_t3_head:
+        st.markdown(f"#### Tabla 3: Ajuste de protecciones recomendados — **{info_rango['tabla_ajustes_num']} CNO 2233** (`tab:AjustesproteccionCNO`)")
+        st.caption(f"Normativa CNO: {info_rango['tabla_ajustes_caption']}")
+    with col_t3_btn:
+        if st.button("🔄 Restaurar Ajustes CNO", key=f"btn_res_ajust_{ver}", help="Restablece los ajustes recomendados del CNO 2233 para este rango"):
+            st.session_state["df_ajustes_cno"] = pd.DataFrame(datos_normativos["df_ajustes_cno"])
+            st.rerun()
+
+    df_ajustes_actual = st.session_state.get("df_ajustes_cno")
+    if df_ajustes_actual is None or not isinstance(df_ajustes_actual, pd.DataFrame):
+        df_ajustes_actual = pd.DataFrame(datos_normativos["df_ajustes_cno"])
+
     df_ajustes_cno = st.data_editor(
-        obtener_df("df_ajustes_cno", df_cno_default),
+        df_ajustes_actual,
         num_rows="dynamic",
         use_container_width=True,
-        key=f"editor_ajustes_cno_eacp_{ver}"
+        key=f"editor_ajustes_cno_eacp_{ver}_{clave_rango}"
     )
+    st.session_state["df_ajustes_cno"] = df_ajustes_cno
+
+    # Cuadro resumen con lineamientos complementarios de corte, anti-isla y registros
+    with st.expander("📌 Ver Requisitos Complementarios CNO 2233 para este Rango de Potencia", expanded=True):
+        col_r1, col_r2, col_r3 = st.columns(3)
+        with col_r1:
+            st.markdown("**🔌 Equipo de Interrupción o Corte:**")
+            st.write(info_rango["equipo_corte"])
+        with col_r2:
+            st.markdown("**🏝️ Esquema de Protección Anti-Isla:**")
+            st.write(info_rango["anti_isla_respaldo"])
+        with col_r3:
+            st.markdown("**📈 Registros Cronológicos (SOE / COMTRADE):**")
+            st.write(info_rango["soe_comtrade"])
 
     datos = {
         "ac_fases": ac_fases,
@@ -113,6 +186,11 @@ def render():
         "obs_cno_1": obs_cno_1,
         "obs_cno_2": obs_cno_2,
         "df_ajustes_cno": df_ajustes_cno,
+        "rango_potencia_cno": clave_rango,
+        "tabla_funciones_num": info_rango["tabla_funciones_num"],
+        "tabla_ajustes_num": info_rango["tabla_ajustes_num"],
+        "tabla_funciones_caption": info_rango["tabla_funciones_caption"],
+        "tabla_ajustes_caption": info_rango["tabla_ajustes_caption"],
     }
     st.session_state["datos_sistema_cno"] = datos
     return datos

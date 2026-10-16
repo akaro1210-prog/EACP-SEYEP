@@ -105,6 +105,7 @@ def importar_proyecto_json(uploaded_json_file):
     st.session_state["num_equipos_or_extra"] = int(datos.get("num_equipos_or_extra", len(datos.get("equipos_or_extra", []))))
     st.session_state["num_cambios_or_extra"] = int(datos.get("num_cambios_or_extra", len(datos.get("cambios_or_extra", []))))
 
+    # Restaurar imágenes adjuntas en el archivo del proyecto
     for img_name, b64_str in imagenes_b64.items():
         if img_name in IMAGENES_PROYECTO and b64_str:
             try:

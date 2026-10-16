@@ -92,7 +92,7 @@ with contenedor_proy:
     col_g1, col_g2 = st.columns([1, 1.4])
     with col_g1:
         st.markdown("##### 💾 Guardar Proyecto Actual")
-        st.caption("Descarga un archivo `.json` con todas las variables, tablas, equipos del OR e imágenes cargadas:")
+        st.caption("Descarga un archivo `.json` con todas las variables, tablas, equipos del OR e imágenes cargadas para retomar o ajustar el estudio más adelante:")
         st.download_button(
             label=f"💾 Guardar Proyecto ({nombre_proy_limpio}_EACP.json)",
             data=bytes_proyecto,
