@@ -115,3 +115,102 @@ def importar_proyecto_json(uploaded_json_file):
                 pass
 
     st.session_state["ver_import"] = st.session_state.get("ver_import", 0) + 1
+
+
+def editor_tabla_seguro(df, key, num_rows="dynamic", disabled_cols=None):
+    """
+    Renderizador resiliente de tablas para Streamlit.
+    - Modo Interactivo: Utiliza st.data_editor nativo.
+    - Modo Compatible: Si el navegador presenta problemas para descargar los módulos
+      dinámicos de JavaScript (TypeError: Failed to fetch dynamically imported module DataFrame.js),
+      permite ver y editar directamente cada celda mediante campos de texto nativos de Streamlit.
+    """
+    if df is None:
+        return None
+    if not isinstance(df, pd.DataFrame):
+        df = pd.DataFrame(df)
+
+    ss_key = f"df_state_{key}"
+    if ss_key not in st.session_state:
+        st.session_state[ss_key] = df.copy()
+
+    df_actual = st.session_state[ss_key]
+    toggle_key = f"toggle_compat_{key}"
+    modo_global_compatible = st.session_state.get("modo_tablas_compatible", False)
+    modo_local_compatible = st.session_state.get(toggle_key, False)
+    usar_modo_compatible = modo_global_compatible or modo_local_compatible
+
+    c_info, c_btn = st.columns([4, 1.3])
+    with c_btn:
+        if usar_modo_compatible:
+            if st.button("📊 Modo Interactivo", key=f"btn_m_inter_{key}", help="Volver a la cuadrícula interactiva st.data_editor"):
+                st.session_state[toggle_key] = False
+                st.session_state["modo_tablas_compatible"] = False
+                st.rerun()
+        else:
+            if st.button("📝 Editar por Campos", key=f"btn_m_comp_{key}", help="Usa este modo si la cuadrícula muestra recuadro rojo 'TypeError: Failed to fetch dynamically imported module'"):
+                st.session_state[toggle_key] = True
+                st.rerun()
+
+    if not usar_modo_compatible:
+        try:
+            df_editado = st.data_editor(
+                df_actual,
+                num_rows=num_rows,
+                use_container_width=True,
+                key=key
+            )
+            st.session_state[ss_key] = df_editado
+            return df_editado
+        except Exception:
+            usar_modo_compatible = True
+
+    if usar_modo_compatible:
+        st.info("💡 **Modo Compatible:** Editando celdas mediante campos de texto directos (100% inmune a errores de red o caché en el navegador).")
+        columnas = list(df_actual.columns)
+        registros = df_actual.to_dict(orient="records")
+        nuevos_registros = []
+        fila_a_eliminar = None
+
+        for idx, row in enumerate(registros):
+            with st.container(border=True):
+                c_lbl, c_del = st.columns([5, 1])
+                with c_lbl:
+                    st.caption(f"**Fila {idx + 1}**")
+                with c_del:
+                    if num_rows == "dynamic" and len(registros) > 1:
+                        if st.button("🗑️", key=f"del_{key}_{idx}", help=f"Eliminar fila {idx + 1}"):
+                            fila_a_eliminar = idx
+
+                cols_inputs = st.columns(len(columnas))
+                fila_editada = {}
+                for col_idx, col_name in enumerate(columnas):
+                    with cols_inputs[col_idx]:
+                        val_prev = str(row.get(col_name, ""))
+                        if val_prev in ("nan", "None"):
+                            val_prev = ""
+                        es_deshabilitada = bool(disabled_cols and col_name in disabled_cols)
+                        nuevo_val = st.text_input(
+                            f"{col_name}:",
+                            value=val_prev,
+                            disabled=es_deshabilitada,
+                            key=f"inp_{key}_{idx}_{col_name}"
+                        )
+                        fila_editada[col_name] = nuevo_val
+                nuevos_registros.append(fila_editada)
+
+        if fila_a_eliminar is not None:
+            nuevos_registros.pop(fila_a_eliminar)
+            st.session_state[ss_key] = pd.DataFrame(nuevos_registros, columns=columnas)
+            st.rerun()
+
+        if num_rows == "dynamic":
+            if st.button("➕ Agregar fila", key=f"add_row_{key}", type="secondary"):
+                fila_vacia = {col: "" for col in columnas}
+                nuevos_registros.append(fila_vacia)
+                st.session_state[ss_key] = pd.DataFrame(nuevos_registros, columns=columnas)
+                st.rerun()
+
+        df_resultado = pd.DataFrame(nuevos_registros, columns=columnas)
+        st.session_state[ss_key] = df_resultado
+        return df_resultado

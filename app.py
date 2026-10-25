@@ -22,6 +22,26 @@ st.markdown(
     "conservando todas las definiciones, referencias cruzadas (`\\cref`) y formato corporativo LaTeX."
 )
 
+# --- Barra Lateral: Configuración de Compatibilidad de Tablas ---
+with st.sidebar:
+    st.markdown("### ⚙️ Modo de Tablas")
+    modo_tablas = st.radio(
+        "Modo de edición de tablas:",
+        options=["📊 Tabla interactiva (st.data_editor)", "📝 Modo compatible (Formulario por campos)"],
+        index=0 if not st.session_state.get("modo_tablas_compatible", False) else 1,
+        help="Si tu navegador presenta el error 'TypeError: Failed to fetch dynamically imported module DataFrame.js', activa el Modo Compatible para editar cualquier tabla directamente con campos de texto nativos sin depender de scripts externos.",
+        key="selector_modo_tablas_global"
+    )
+    st.session_state["modo_tablas_compatible"] = ("compatible" in modo_tablas.lower())
+
+    st.markdown("---")
+    st.caption(
+        "💡 **¿Error de carga en el navegador?**\n"
+        "Si ves un recuadro rojo en las tablas:\n"
+        "• Presiona `Ctrl + Shift + R` o `Ctrl + F5` (Windows) o `Cmd + Shift + R` (Mac) para refrescar la caché del navegador.\n"
+        "• O activa el **Modo compatible** arriba para editar sin depender de DataFrame.js."
+    )
+
 # --- Barra Superior para Guardar e Importar Proyectos (.json) ---
 contenedor_proy = st.container(border=True)
 

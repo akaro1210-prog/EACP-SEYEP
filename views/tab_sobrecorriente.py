@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from project_manager import obtener_val, obtener_df, obtener_ver
+from project_manager import obtener_val, obtener_df, obtener_ver, editor_tabla_seguro
 
 def render():
     ver = obtener_ver()
@@ -37,11 +37,10 @@ def render():
     ])
     if incluir_reco_cabecera:
         st.markdown("#### Tabla `tab:ajustesrecoCabecera` (Reconectador `\\recocabecera`)")
-        df_reco_cabecera = st.data_editor(
+        df_reco_cabecera = editor_tabla_seguro(
             obtener_df("df_reco_cabecera", df_cabecera_default),
-            num_rows="dynamic",
-            use_container_width=True,
-            key=f"ed_reco_cab_eacp_{ver}"
+            key=f"ed_reco_cab_eacp_{ver}",
+            num_rows="dynamic"
         )
     else:
         df_reco_cabecera = obtener_df("df_reco_cabecera", df_cabecera_default)
@@ -54,11 +53,10 @@ def render():
     ])
     if incluir_reco_cto:
         st.markdown("#### Tabla `tab:ajustesrecoCTO` (Reconectador `\\recoCTO`)")
-        df_reco_cto = st.data_editor(
+        df_reco_cto = editor_tabla_seguro(
             obtener_df("df_reco_cto", df_cto_default),
-            num_rows="dynamic",
-            use_container_width=True,
-            key=f"ed_reco_cto_eacp_{ver}"
+            key=f"ed_reco_cto_eacp_{ver}",
+            num_rows="dynamic"
         )
     else:
         df_reco_cto = obtener_df("df_reco_cto", df_cto_default)
@@ -101,11 +99,10 @@ def render():
         else:
             df_extra_init = df_extra_default
 
-        df_eq_extra = st.data_editor(
+        df_eq_extra = editor_tabla_seguro(
             df_extra_init,
-            num_rows="dynamic",
-            use_container_width=True,
-            key=f"ed_eq_or_extra_{num_eq}_{ver}"
+            key=f"ed_eq_or_extra_{num_eq}_{ver}",
+            num_rows="dynamic"
         )
         equipos_or_extra.append({
             "nombre": nombre_eq,
@@ -189,29 +186,56 @@ def render():
             {"Parámetro": "ANSI 50N", "Pick Up [Aprim]": "1100", "DIAL [s]": "0", "Curva": "DT"},
         ])
         st.markdown(f"#### Tabla `tab:ajustesrecoProyecto` ({caption_tabla_proy})")
-        df_ajustes_reco_proy = st.data_editor(
+        df_ajustes_reco_proy = editor_tabla_seguro(
             obtener_df("df_ajustes_reco_proy", df_proy_default),
-            num_rows="dynamic",
-            use_container_width=True,
-            key=f"ed_reco_proy_eacp_{ver}"
+            key=f"ed_reco_proy_eacp_{ver}",
+            num_rows="dynamic"
         )
     else:
-        st.markdown("#### Fórmulas y Cálculos para Protecciones Térmicas Breaker / Interruptor")
+        st.markdown("#### 🛡️ Protección Termomagnética / Breaker (Sistemas $\\leq$ 250 kW)")
+        st.info(
+            f"💡 **Criterio Técnico (Sistemas $\\leq$ 250 kW):** Según el **Acuerdo CNO {norma_cno_val}**, para sistemas con potencia "
+            "nominal $\\leq 0.25\\text{ MW}$ no se exige relé secundario de protección ni reconectador si se dispone de protección "
+            "termomagnética (Breaker) en baja tensión y función anti-isla intrínseca en inversores (IEEE 1547 / UL 1741). "
+            "El dimensionamiento térmico se rige por el **RETIE** y la norma **NTC 2050 (Art. 690 y 705)** con factor continuo de 1.25."
+        )
+
+        default_criterio_normativo = (
+            f"De conformidad con lo dispuesto en el Acuerdo CNO {norma_cno_val} para sistemas de generación y autogeneración "
+            r"con capacidad instalada menor o igual a 0.25 MW ($\leq$ 250 kW), la protección contra sobrecorrientes en el punto de "
+            r"conexión (PC) y en la unidad de generación (UG) se implementa mediante un interruptor automático termomagnético en caja moldeada "
+            r"(MCCB), garantizando la desconexión ante fallas de sobrecarga y cortocircuito, complementado con la protección intrínseca "
+            r"anti-isla de los inversores (certificada conforme a normas IEEE 1547 y UL 1741). Asimismo, según el Reglamento Técnico "
+            r"de Instalaciones Eléctricas (RETIE) y la norma NTC 2050 (Artículos 690-8, 690-9 y 705-12), los dispositivos de protección "
+            r"de sobrecorriente de los circuitos de salida de fuentes de generación continua se seleccionan para operar de manera continua "
+            r"considerando un factor del 125\% (1,25) sobre la corriente nominal máxima de generación, garantizando la capacidad de "
+            r"conducción continua de los conductores y protegiendo contra daños térmicos."
+        )
+
+        criterio_normativo_termomagnetico = st.text_area(
+            "1. Justificación Normativa RETIE & CNO (Editable):",
+            value=obtener_val("criterio_normativo_termomagnetico", default_criterio_normativo),
+            height=140,
+            key=f"crit_norm_bk_{ver}",
+            help="Redacción técnica editable que justifica el uso de protección termomagnética conforme a RETIE y el Acuerdo CNO vigente."
+        )
+
+        st.markdown("##### 2. Parámetros del Sistema y Cálculos de Corriente ($I_n$, $I_{\\text{térmica}}$, $I_{\\text{magnética}}$)")
         c_b1, c_b2, c_b3, c_b4 = st.columns(4)
         with c_b1:
-            calc_potencia = st.text_input("Potencia P en fórmula In:", value=obtener_val("calc_potencia", "900kW"), key=f"cpot_bk_{ver}")
+            calc_potencia = st.text_input("Potencia P en fórmula In:", value=obtener_val("calc_potencia", "200kW"), key=f"cpot_bk_{ver}")
             calc_tension = st.text_input("Tensión VL en fórmula In:", value=obtener_val("calc_tension", "0.48kV"), key=f"cten_bk_{ver}")
         with c_b2:
             calc_cosphi = st.text_input("Factor de potencia cos(phi):", value=obtener_val("calc_cosphi", "1"), key=f"cphi_bk_{ver}")
-            calc_in_val = st.text_input("Corriente nominal In [A]:", value=obtener_val("calc_in_val", "1081"), key=f"cin_bk_{ver}")
+            calc_in_val = st.text_input("Corriente nominal In [A]:", value=obtener_val("calc_in_val", "240.56"), key=f"cin_bk_{ver}")
         with c_b3:
-            calc_factor_termico = st.text_input("Factor térmico (Sobrecarga / L):", value=obtener_val("calc_factor_termico", "1.25"), key=f"cfterm_bk_{ver}")
-            calc_itermica_exact = st.text_input("I_térmica calculada [A]:", value=obtener_val("calc_itermica_exact", "1351.25"), key=f"citerm_ex_{ver}")
-            calc_itermica_aprox = st.text_input("Calibre comercial Breaker / Ir [A]:", value=obtener_val("calc_itermica_aprox", "1360"), key=f"citerm_ap_{ver}")
+            calc_factor_termico = st.text_input("Factor térmico RETIE (L):", value=obtener_val("calc_factor_termico", "1.25"), key=f"cfterm_bk_{ver}")
+            calc_itermica_exact = st.text_input("I_térmica calculada [A]:", value=obtener_val("calc_itermica_exact", "300.70"), key=f"citerm_ex_{ver}")
+            calc_itermica_aprox = st.text_input("Calibre comercial Breaker / Ir [A]:", value=obtener_val("calc_itermica_aprox", "300"), key=f"citerm_ap_{ver}")
         with c_b4:
-            calc_factor_magnetico = st.text_input("Factor / Múltiplo magnético (Im):", value=obtener_val("calc_factor_magnetico", "2.5"), key=f"cfmag_bk_{ver}")
-            calc_imagnetica_exact = st.text_input("I_magnética calculada [A]:", value=obtener_val("calc_imagnetica_exact", "2702.5"), key=f"cimag_ex_{ver}")
-            calc_imagnetica_aprox = st.text_input("Ajuste disparo magnético / Im [A]:", value=obtener_val("calc_imagnetica_aprox", "2720"), key=f"cimag_ap_{ver}")
+            calc_factor_magnetico = st.text_input("Factor magnético (Im):", value=obtener_val("calc_factor_magnetico", "2.5"), key=f"cfmag_bk_{ver}")
+            calc_imagnetica_exact = st.text_input("I_magnética calculada [A]:", value=obtener_val("calc_imagnetica_exact", "601.40"), key=f"cimag_ex_{ver}")
+            calc_imagnetica_aprox = st.text_input("Ajuste disparo magnético / Im [A]:", value=obtener_val("calc_imagnetica_aprox", "650"), key=f"cimag_ap_{ver}")
 
         calc_i51p_exact = ""
         calc_i51p_aprox = ""
@@ -221,16 +245,16 @@ def render():
         parrafo_breaker_default = (
             r"Para la protección general en baja tensión de los inversores hacia el punto de conexión se seleccionó un interruptor de caja moldeada "
             r"(Breaker) con unidad de disparo termomagnética / electrónica (LSI). La unidad térmica (protección contra sobrecarga continua, función L) "
-            r"se dimensionó con base en la corriente nominal calculada multiplicada por un factor de seguridad de 1.25 (según RETIE y normativa NTC 2050), "
-            r"obteniendo un ajuste comercial de \textbf{" + str(obtener_val("calc_itermica_aprox", "1360")) + r" A}. "
+            r"se dimensionó con base en la corriente nominal calculada multiplicada por el factor de seguridad de 1.25 (según RETIE y normativa NTC 2050), "
+            r"obteniendo un calibre comercial de \textbf{" + str(calc_itermica_aprox) + r" A}. "
             r"Por su parte, la unidad magnética (función de cortocircuito, disparo instantáneo / temporizado) se ajustó para garantizar la apertura "
             r"rápida y selectiva ante fallas francas en bornes de los inversores o el transformador, evitando disparos ante corrientes transitorias de energización "
-            r"y coordinando con las protecciones de cabecera del sistema. En la \cref{tab:ajustesrecoProyecto} se resume el ajuste de las funciones de protección del Breaker."
+            r"y coordinando con las protecciones de cabecera del sistema del Operador de Red. En la \cref{tab:ajustesrecoProyecto} se resume el ajuste de las funciones de protección del Breaker."
             "\n\\\\\n"
             r"El resumen general de ajustes de protección se presenta en las \cref{tab:ajustesrecoProyecto,tab:resumenajustestotales}."
         )
         parrafo_calculo_50 = st.text_area(
-            "Párrafo explicativo de la Protección Térmica y Magnética del Breaker:",
+            "3. Párrafo explicativo de la Protección Térmica y Magnética del Breaker (Editable):",
             value=obtener_val("parrafo_calculo_50", parrafo_breaker_default),
             height=150,
             key=f"pbk_{ver}"
@@ -243,17 +267,16 @@ def render():
         )
 
         df_breaker_default = pd.DataFrame([
-            {"Parámetro": "Protección Térmica (L - Sobrecarga)", "Pick Up [Aprim]": "1360", "DIAL [s]": "Curva Térmica", "Curva": "Inversa"},
-            {"Parámetro": "Protección Magnética (I - Instantáneo)", "Pick Up [Aprim]": "2720", "DIAL [s]": "0,0", "Curva": "DT"},
-            {"Parámetro": "Protección Cortocircuito (S - Temporizado)", "Pick Up [Aprim]": "2000", "DIAL [s]": "0,1", "Curva": "DT"},
-            {"Parámetro": "Protección Falla a Tierra (G - Opcional)", "Pick Up [Aprim]": "400", "DIAL [s]": "0,1", "Curva": "DT"},
+            {"Parámetro": "Protección Térmica (L - Sobrecarga)", "Pick Up [Aprim]": str(calc_itermica_aprox), "DIAL [s]": "Curva Térmica", "Curva": "Inversa"},
+            {"Parámetro": "Protección Magnética (I - Instantáneo)", "Pick Up [Aprim]": str(calc_imagnetica_aprox), "DIAL [s]": "0,0", "Curva": "DT"},
+            {"Parámetro": "Protección Cortocircuito (S - Temporizado)", "Pick Up [Aprim]": str(round(float(calc_in_val.replace(',', '.')) * 2, 1) if calc_in_val.replace('.', '', 1).isdigit() else "500"), "DIAL [s]": "0,1", "Curva": "DT"},
+            {"Parámetro": "Protección Falla a Tierra (G - Opcional)", "Pick Up [Aprim]": "100", "DIAL [s]": "0,1", "Curva": "DT"},
         ])
         st.markdown(f"#### Tabla `tab:ajustesrecoProyecto` ({caption_tabla_proy})")
-        df_ajustes_reco_proy = st.data_editor(
+        df_ajustes_reco_proy = editor_tabla_seguro(
             obtener_df("df_ajustes_breaker_proy", df_breaker_default),
-            num_rows="dynamic",
-            use_container_width=True,
-            key=f"ed_breaker_proy_eacp_{ver}"
+            key=f"ed_breaker_proy_eacp_{ver}",
+            num_rows="dynamic"
         )
 
     norma_cno_val = st.session_state.get("config_vars", {}).get("normaCNO", st.session_state.get("normaCNO", "2233"))
@@ -298,11 +321,10 @@ def render():
             {"Función": "Anti-isla", "Ajustes": "Lógica compuesta con señales de tensión y frecuencia", "Temporización": "500ms"},
             {"Función": "Verificación de sincronismo", "Ajustes": "Condición barra viva OR - Línea muerta PV umbral de tensión 0.8p.u", "Temporización": "NA"},
         ])
-    df_resumen_totales = st.data_editor(
+    df_resumen_totales = editor_tabla_seguro(
         obtener_df("df_resumen_totales", df_sist_default),
-        num_rows="dynamic",
-        use_container_width=True,
-        key=f"ed_resumen_tot_eacp_{ver}"
+        key=f"ed_resumen_tot_eacp_{ver}",
+        num_rows="dynamic"
     )
 
     # ================= 3. CONCLUSIÓN Y PROPUESTA OPCIONAL DE CAMBIO DE AJUSTES DEL OR =================
@@ -384,11 +406,10 @@ def render():
         ])
         if incluir_tabla_cambio_cab:
             st.markdown("#### Tabla `tab:cambioAjustescabecera` (Propuesta para Reconectador `\\recocabecera`)")
-            df_cambio_cab = st.data_editor(
+            df_cambio_cab = editor_tabla_seguro(
                 obtener_df("df_cambio_cab", df_cambio_cab_default),
-                num_rows="dynamic",
-                use_container_width=True,
-                key=f"ed_cambio_cab_{ver}"
+                key=f"ed_cambio_cab_{ver}",
+                num_rows="dynamic"
             )
 
         df_cambio_cto_default = pd.DataFrame([
@@ -399,11 +420,10 @@ def render():
         ])
         if incluir_tabla_cambio_cto:
             st.markdown("#### Tabla `tab:cambioAjustes` (Propuesta para Reconectador `\\recoCTO`)")
-            df_cambio_cto = st.data_editor(
+            df_cambio_cto = editor_tabla_seguro(
                 obtener_df("df_cambio_cto", df_cambio_cto_default),
-                num_rows="dynamic",
-                use_container_width=True,
-                key=f"ed_cambio_cto_{ver}"
+                key=f"ed_cambio_cto_{ver}",
+                num_rows="dynamic"
             )
 
         # --- Botones para agregar más equipos en la propuesta de cambios del OR ---
@@ -451,11 +471,10 @@ def render():
             else:
                 df_c_init = df_cambio_extra_def
 
-            df_cambio_extra = st.data_editor(
+            df_cambio_extra = editor_tabla_seguro(
                 df_c_init,
-                num_rows="dynamic",
-                use_container_width=True,
-                key=f"ed_cambio_or_extra_{num_c}_{ver}"
+                key=f"ed_cambio_or_extra_{num_c}_{ver}",
+                num_rows="dynamic"
             )
             cambios_or_extra.append({
                 "nombre": nombre_cambio_eq,
@@ -478,6 +497,7 @@ def render():
         "equipos_or_extra": equipos_or_extra,
         "txt_recierre_or": txt_recierre_or,
         "tipo_proteccion_principal": tipo_proteccion_principal,
+        "criterio_normativo_termomagnetico": criterio_normativo_termomagnetico if es_modo_breaker else "",
         "caption_tabla_proy": caption_tabla_proy,
         "calc_potencia": calc_potencia,
         "calc_tension": calc_tension,

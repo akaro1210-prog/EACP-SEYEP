@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-from project_manager import obtener_df, obtener_ver
+from project_manager import obtener_df, obtener_ver, editor_tabla_seguro
 
 def guardar_archivo_subido(uploaded_file, nombre_destino):
     if uploaded_file is not None:
@@ -66,10 +66,9 @@ def render():
         }
     ])
 
-    df_control_cambios = st.data_editor(
+    df_control_cambios = editor_tabla_seguro(
         obtener_df("df_control_cambios", df_default),
         num_rows="dynamic",
-        use_container_width=True,
         key=f"editor_cambios_eacp_{ver}"
     )
 

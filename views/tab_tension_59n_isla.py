@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
-from project_manager import obtener_val, obtener_df, obtener_ver
+from project_manager import obtener_val, obtener_df, obtener_ver, editor_tabla_seguro
 
 def guardar_archivo_subido(uploaded_file, nombre_destino):
     if uploaded_file is not None:
@@ -131,10 +131,9 @@ def render():
     else:
         st.caption("Edita los valores de la tabla de tensión residual 3V0 y las variables enlazadas en el párrafo de análisis:")
 
-        df_tres_vcero = st.data_editor(
+        df_tres_vcero = editor_tabla_seguro(
             obtener_df("df_tres_vcero", df_3v0_default),
             num_rows="dynamic",
-            use_container_width=True,
             key=f"editor_3v0_eacp_{ver}"
         )
 

@@ -79,10 +79,15 @@ def resolver_ruta_imagen(nombre_archivo):
 
 def incluir_imagen_segura(nombre_archivo, opciones="width=0.95\\textwidth", usar_resizebox=False, ancho_resize="1\\textwidth"):
     ruta_resuelta = resolver_ruta_imagen(nombre_archivo)
+    opciones_norm = (
+        str(opciones)
+        .replace("max width=", "width=")
+        .replace("max height=", "height=")
+    )
     if ruta_resuelta:
         if usar_resizebox:
             return f"\\resizebox{{{ancho_resize}}}{{!}}{{\\includegraphics{{{ruta_resuelta}}}}}"
-        return f"\\includegraphics[{opciones}]{{{ruta_resuelta}}}"
+        return f"\\includegraphics[{opciones_norm}]{{{ruta_resuelta}}}"
     nombre_limpio = escapar_latex(os.path.basename(str(nombre_archivo).strip()))
     return (
         f"\\fbox{{\\parbox{{0.85\\textwidth}}{{\\centering\\vspace{{0.5cm}}"
@@ -116,6 +121,27 @@ def generar_preambulo():
 \\usepackage{{anyfontsize}}
 \\usepackage{{pdflscape}}
 \\usepackage{{float}}
+\\usepackage{{etoolbox}}
+\\IfFileExists{{placeins.sty}}{{
+  \\usepackage[section]{{placeins}}
+}}{{
+  \\providecommand{{\\FloatBarrier}}{{\\relax}}
+}}
+
+% ---------- Control estricto de retención de tablas y figuras en su sección ----------
+\\pretocmd{{\\section}}{{\\FloatBarrier}}{{}}{{}}
+\\pretocmd{{\\subsection}}{{\\FloatBarrier}}{{}}{{}}
+\\pretocmd{{\\subsubsection}}{{\\FloatBarrier}}{{}}{{}}
+\\renewcommand{{\\topfraction}}{{0.85}}
+\\renewcommand{{\\bottomfraction}}{{0.85}}
+\\renewcommand{{\\textfraction}}{{0.15}}
+\\renewcommand{{\\floatpagefraction}}{{0.80}}
+\\setcounter{{topnumber}}{{4}}
+\\setcounter{{bottomnumber}}{{4}}
+\\setcounter{{totalnumber}}{{6}}
+\\setlength{{\\floatsep}}{{10pt plus 2pt minus 2pt}}
+\\setlength{{\\textfloatsep}}{{14pt plus 2pt minus 3pt}}
+\\setlength{{\\intextsep}}{{10pt plus 2pt minus 2pt}}
 \\usepackage[strict]{{changepage}}
 \\setlength{{\\headheight}}{{147pt}}
 \\addtolength{{\\topmargin}}{{-17pt}}
@@ -132,7 +158,7 @@ def generar_preambulo():
 \\usepackage{{etoolbox}}
 \\usepackage{{amsmath}}
 \\usepackage{{pgfplotstable}}
-\\usepackage{{adjustbox}}
+\\usepackage[export]{{adjustbox}}
 \\usepackage{{longtable}}
 
 % --- Parche obligatorio para el error \\tbl_gdecr_row_count ---
@@ -327,6 +353,9 @@ def compilar_estudio_latex(params):
     # 3. Sistema AC y Tablas CNO
     ac_fases = params.get("ac_fases", r"$3~\phi$")
     ac_etiqueta_pot = escapar_latex(params.get("ac_etiqueta_pot", "Potencia"))
+    ac_potencia = escapar_latex(params.get("ac_potencia", params.get("capacidadMW", "900kW")))
+    if not ac_potencia.strip():
+        ac_potencia = r"\capacidadMW"
     ac_tension_kv = escapar_latex(params.get("ac_tension_kv", "0,48"))
     ac_corriente_max = escapar_latex(params.get("ac_corriente_max", "1081"))
     ac_factor_carga = escapar_latex(params.get("ac_factor_carga", "1,25"))
@@ -465,9 +494,9 @@ def compilar_estudio_latex(params):
     proteccion_tensiones_txt = params.get("proteccion_tensiones_txt", "")
 
     if incluir_img_2759:
-        cmd_img_2759 = incluir_imagen_segura("Proteccion27-59.png", "width=16.5cm")
+        cmd_img_2759 = incluir_imagen_segura("Proteccion27-59.png", "width=\\textwidth, height=0.55\\textheight, keepaspectratio")
         bloque_fig_2759 = f"""
-\\begin{{figure}}[h]
+\\begin{{figure}}[H]
     \\centering
     {cmd_img_2759}
     \\caption{{Verificación ajustes ANSI 27/59 con curvas HVRT y LVRT}}
@@ -733,7 +762,11 @@ Dado esto, la corriente de la función 51N:
 
 \\[ I_{{51N}} = {calc_in_val} \\cdot 0.4 = {calc_i51n_exact} \\approx {calc_i51n_aprox} \\]"""
     else:
-        bloque_formulas_sobrecorriente = f"""Los ajustes de protección para el interruptor termomagnético / Breaker del proyecto se determinaron a partir de la corriente nominal de la instalación y los requerimientos de protección contra sobrecarga continua (función térmica) y cortocircuito (función magnética). A continuación se muestran las fórmulas para dichos cálculos:\\\\
+        criterio_normativo_termomagnetico = params.get("criterio_normativo_termomagnetico", "")
+        txt_normativo_tm = ""
+        if criterio_normativo_termomagnetico and str(criterio_normativo_termomagnetico).strip():
+            txt_normativo_tm = f"{str(criterio_normativo_termomagnetico).strip()}\n\\vspace{{0.4cm}}\n\n"
+        bloque_formulas_sobrecorriente = f"""{txt_normativo_tm}Los ajustes de protección para el interruptor termomagnético / Breaker del proyecto se determinaron a partir de la corriente nominal de la instalación y los requerimientos de protección contra sobrecarga continua (función térmica) y cortocircuito (función magnética). A continuación se muestran las fórmulas para dichos cálculos:\\\\
 
 \\textbf{{Cálculo de corriente nominal ($I_n$).}}\\\\
 \\[ I_n = \\frac{{P}}{{\\sqrt{{3}} \\cdot V_L \\cdot \\cos(\\phi)}} \\]
@@ -822,7 +855,7 @@ Dado esto:
                     f_ccab.append(f"            {par} & {pa} & {da} & {ca} & {pp} & {dp} & {cp} \\\\ \\hline")
             str_f_ccab = "\n".join(f_ccab)
             bloques_tablas_cambio.append(f"""
-\\begin{{table}}[h!]
+\\begin{{table}}[H]
     \\centering
     \\captionsetup{{hypcap=false}}
     \\captionof{{table}}{{Ajustes de protección propuestos para el Reconectador \\recocabecera.}}
@@ -858,7 +891,7 @@ Dado esto:
                     f_ccto.append(f"            {par} & {pa} & {da} & {ca} & {pp} & {dp} & {cp} \\\\ \\hline")
             str_f_ccto = "\n".join(f_ccto)
             bloques_tablas_cambio.append(f"""
-\\begin{{table}}[h!]
+\\begin{{table}}[H]
     \\centering
     \\captionsetup{{hypcap=false}}
     \\captionof{{table}}{{Ajustes de protección propuestos para el Reconectador \\recoCTO.}}
@@ -899,7 +932,7 @@ Dado esto:
                 if f_cex:
                     str_f_cex = "\n".join(f_cex)
                     bloques_tablas_cambio.append(f"""
-\\begin{{table}}[h!]
+\\begin{{table}}[H]
     \\centering
     \\captionsetup{{hypcap=false}}
     \\captionof{{table}}{{Ajustes de protección propuestos para {nom_cex}.}}
@@ -1124,11 +1157,11 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
             \\multicolumn{{2}}{{|c|}}{{\\color{{white}}\\textbf{{Sistema AC}}}} \\\\ \\hline
             \\multicolumn{{2}}{{|c|}}{{Protección arreglo de inversores AC}} \\\\ \\hline
             Sistema AC & {ac_fases} \\\\ \\hline
-            {ac_etiqueta_pot} & \\capacidadMW \\\\ \\hline
+            {ac_etiqueta_pot} & {ac_potencia} \\\\ \\hline
             Tensión de Línea [kV] & {ac_tension_kv} \\\\ \\hline
             Intensidad máxima [A] & {ac_corriente_max} \\\\ \\hline
             Factor de carga continua & {ac_factor_carga} \\\\ \\hline
-            Protección en tablero principal ($\\text{{I}}_{{\\text{{max}}}} \\times Factor Carga Continua$) [A] & {ac_proteccion_tablero} \\\\ \\hline
+            Protección en tablero principal ($\\text{{I}}_{{\\text{{max}}}} \\times {ac_factor_carga}$) [A] & {ac_proteccion_tablero} \\\\ \\hline
         \\end{{tabular}}%
         }}
         \\endgroup{bloque_nota_ac}
@@ -1195,9 +1228,9 @@ Para el cálculo de la protección general de los inversores, se tuvieron en cue
     \\end{{minipage}}
 \\end{{center}}
 
-\\begin{{table}}[h!]
+\\begin{{table}}[H]
     \\centering
-    \\captionof{{table}}{{{caption_resumen_totales}}}
+    \\caption{{{caption_resumen_totales}}}
     \\label{{tab:resumenajustestotales}}
     \\begingroup
     \\adjustbox{{max width=\\textwidth}}{{%
@@ -1304,9 +1337,9 @@ Conforme a las notas del acuerdo CNO, se tienen las siguientes observaciones sob
 
 {texto_intro_ajustes}
 
-\\begin{{table}}[h!]
+\\begin{{table}}[H]
     \\centering
-    \\captionof{{table}}{{{caption_ajustes_cno}}}
+    \\caption{{{caption_ajustes_cno}}}
     \\label{{tab:AjustesproteccionCNO}}
     \\begingroup
     \\adjustbox{{max width=\\textwidth}}{{%
