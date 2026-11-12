@@ -33,6 +33,7 @@ IMAGENES_PROYECTO = [
     "Protecciones falla 3F 15ohms nodo conexión proyecto.png",
     "Protecciones falla 3F 30ohms nodo conexión proyecto.png",
     "AjustesEquiposOR.png",
+    "Ajustes27Celsia.png",
 ]
 
 def guardar_archivo_subido(uploaded_file, nombre_destino):

@@ -562,6 +562,22 @@ def compilar_estudio_latex(params):
     incluir_sec_59n = params.get("incluir_sec_59n", True)
     proteccion_tensiones_txt = params.get("proteccion_tensiones_txt", "")
 
+    es_formato_celsia_27 = bool(params.get("es_formato_celsia_27", False)) or ("celsia" in str(params.get("modo_27_59", "")).lower())
+    caption_img_27_celsia = escapar_latex(params.get("caption_img_27_celsia", "Ajustes de protección ANSI 27 suministrados por el OR (CELSIA)"))
+    if es_formato_celsia_27:
+        cmd_img_cel = incluir_imagen_segura("Ajustes27Celsia.png", "width=\\textwidth, height=0.55\\textheight, keepaspectratio")
+        bloque_img_celsia_27 = f"""
+\\begin{{figure}}[H]
+    \\centering
+    {cmd_img_cel}
+    \\caption{{{caption_img_27_celsia}}}
+    \\label{{fig:ajustes27Celsia}}
+    \\phantomsection\\label{{tab:ajustes27Celsia}}%
+\\end{{figure}}
+"""
+    else:
+        bloque_img_celsia_27 = "\\phantomsection\\label{fig:ajustes27Celsia}\\phantomsection\\label{tab:ajustes27Celsia}%\n"
+
     if incluir_img_2759:
         cmd_img_2759 = incluir_imagen_segura("Proteccion27-59.png", "width=\\textwidth, height=0.55\\textheight, keepaspectratio")
         bloque_fig_2759 = f"""
@@ -594,8 +610,26 @@ def compilar_estudio_latex(params):
     texto_59n = params.get("texto_59n", "")
     texto_anti_isla = params.get("texto_anti_isla", "")
 
+    solo_texto_59n = bool(params.get("solo_texto_59n", False))
+
     if incluir_sec_59n:
-        bloque_sec_59n = f"""
+        if solo_texto_59n:
+            txt_59n_final = str(params.get("texto_59n_solo", params.get("texto_59n", ""))).strip()
+            if not txt_59n_final:
+                txt_59n_final = (
+                    r"El ajuste de la función de sobretensión residual (ANSI 59N) para el proyecto se define para detectar "
+                    r"desplazamientos del neutro ante fallas monofásicas a tierra en el sistema de media tensión. "
+                    r"Se establece un umbral de arranque ajustado a \ajustetresVcero\ con una temporización de tiempo definido de 2.0 segundos, "
+                    r"garantizando la selectividad y coordinación con las protecciones de respaldo del circuito sin operar ante desbalances normales del sistema."
+                )
+            bloque_sec_59n = f"""
+\\newpage
+\\subsection{{\\textit{{Cálculos para la protección 59N}}}}
+\\phantomsection\\label{{tab:tresVcero}}%
+{txt_59n_final}
+"""
+        else:
+            bloque_sec_59n = f"""
 \\newpage
 \\subsection{{\\textit{{Cálculos para la protección 59N}}}}
 Para la definición del umbral de operación de la función de sobretensión de neutro (59N), se realizaron simulaciones de cortocircuito monofásico en el Punto de Conexión (PC), variando la impedancia de falla para evaluar la respuesta de la tensión residual (3V0) del sistema. En la siguiente tabla se observan los valores de 3V0 para cada tipo de falla:
@@ -1390,6 +1424,7 @@ Conforme a las notas del acuerdo CNO, se tienen las siguientes observaciones sob
 \\newpage
 \\subsection{{\\textit{{Cálculos para las protecciones 27 y 59}}}}
 \\protecciontensiones
+{bloque_img_celsia_27}
 {bloque_fig_2759}
 {bloque_sec_59n}
 \\subsection{{\\textit{{Cálculos para la protección Anti-isla}}}}
