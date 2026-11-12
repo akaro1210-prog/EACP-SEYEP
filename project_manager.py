@@ -32,7 +32,24 @@ IMAGENES_PROYECTO = [
     "Protecciones falla 3F 5ohms nodo conexión proyecto.png",
     "Protecciones falla 3F 15ohms nodo conexión proyecto.png",
     "Protecciones falla 3F 30ohms nodo conexión proyecto.png",
+    "AjustesEquiposOR.png",
 ]
+
+def guardar_archivo_subido(uploaded_file, nombre_destino):
+    if uploaded_file is not None:
+        try:
+            from PIL import Image
+            img = Image.open(uploaded_file)
+            img = img.convert("RGBA") if img.mode in ("RGBA", "P") else img.convert("RGB")
+            img.save(nombre_destino, "PNG")
+        except Exception:
+            with open(nombre_destino, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+        return True
+    return False
+
+def estado_archivo(nombre_archivo):
+    return "✅ Cargada" if os.path.exists(nombre_archivo) else "⚠️ Pendiente"
 
 def obtener_ver():
     return st.session_state.get("ver_import", 0)
@@ -49,11 +66,11 @@ def obtener_df(clave, df_default):
     proy = st.session_state.get("proyecto_cargado", {})
     if isinstance(proy, dict) and clave in proy:
         val = proy[clave]
-        if isinstance(val, list):
+        if isinstance(val, list) and len(val) > 0:
             return pd.DataFrame(val)
-        if isinstance(val, pd.DataFrame):
+        if isinstance(val, pd.DataFrame) and not val.empty:
             return val
-    return df_default
+    return df_default.copy() if isinstance(df_default, pd.DataFrame) else pd.DataFrame(df_default)
 
 def serializar_objeto(obj):
     if isinstance(obj, pd.DataFrame):
@@ -131,7 +148,16 @@ def editor_tabla_seguro(df, key, num_rows="dynamic", disabled_cols=None):
         df = pd.DataFrame(df)
 
     ss_key = f"df_state_{key}"
-    if ss_key not in st.session_state:
+    debe_inicializar = False
+    if ss_key not in st.session_state or st.session_state[ss_key] is None:
+        debe_inicializar = True
+    elif isinstance(st.session_state[ss_key], pd.DataFrame):
+        if st.session_state[ss_key].empty and not df.empty:
+            debe_inicializar = True
+        elif not df.empty and ("Pick Up [Aprim]" in df.columns and "Pick Up [Aprim]" not in st.session_state[ss_key].columns):
+            debe_inicializar = True
+
+    if debe_inicializar:
         st.session_state[ss_key] = df.copy()
 
     df_actual = st.session_state[ss_key]

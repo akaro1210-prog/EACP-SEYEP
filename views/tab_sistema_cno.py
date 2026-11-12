@@ -29,131 +29,187 @@ def render(config_vars=None):
     )
 
     # =========================================================================
-    # 1.1 SISTEMA AC (TABLA 1: \sistemaAC) - CÁLCULOS AUTOMÁTICOS
+    # 1.1 SISTEMA AC (TABLA 1: \sistemaAC) - CÁLCULO O INGRESO MANUAL
     # =========================================================================
-    st.markdown("### 1.1 Sistema AC (`\\sistemaAC` - Tabla 1: Sistema AC)")
-    st.write(
-        "Ingresa la **potencia del sistema**, la **tensión de línea** y el **factor de carga continua**. "
-        "El programa calcula automáticamente la **corriente nominal ($I_{\\text{max}}$)** "
-        "y la **protección del tablero principal ($I_{\\text{max}} \\times \\text{Factor}$)**. "
-        "El valor de la nota es editable directamente por el usuario."
-    )
+    col_t_title, col_t_mod = st.columns([3, 2.5])
+    with col_t_title:
+        st.markdown("### 1.1 Sistema AC (`\\sistemaAC` - Tabla 1: Sistema AC)")
+    with col_t_mod:
+        modo_ingreso_ac = st.radio(
+            "Modo de llenado de la Tabla 1:",
+            [
+                "⚡ Cálculo Automático",
+                "✍️ Ingresar a mano (Manual)"
+            ],
+            index=0 if not obtener_val("modo_ac_manual", False) else 1,
+            horizontal=True,
+            key=f"modo_ac_rad_{ver}",
+            help="Selecciona 'Cálculo Automático' para que el sistema calcule la corriente y protección a partir de P, VL y Factor, o 'Ingresar a mano' para escribir cada celda libremente."
+        )
+
+    es_manual = ("manual" in modo_ingreso_ac.lower())
+    st.session_state["modo_ac_manual"] = es_manual
 
     pot_proyecto_def = str(obtener_val("ac_potencia", config_vars.get("capacidadMW", st.session_state.get("capacidadMW", "900kW"))))
-    
-    col_in1, col_in2, col_in3 = st.columns(3)
-    with col_in1:
-        ac_potencia = st.text_input(
-            "1. Potencia del sistema:",
-            value=pot_proyecto_def,
-            key=f"ac_pot_{ver}",
-            help="Potencia del parque solar o unidad de generación (ej. 900kW, 900 kW, 0.9MW o 900)."
+
+    if es_manual:
+        st.info("✍️ **Modo Manual activo:** Puedes escribir libremente todos los campos de la tabla o utilizar las plantillas rápidas.")
+        plantilla_ac = st.radio(
+            "Plantilla rápida de referencia:",
+            [
+                "Configuración 0,48 kV (Intensidad 1081 A / Protección 1353* A)",
+                "Configuración 0,80 kV (Intensidad 775 A / Protección 967,6 A)",
+                "Personalizado"
+            ],
+            index=0,
+            horizontal=True,
+            key=f"rad_ac_man_{ver}"
         )
-    with col_in2:
-        ac_tension_kv = st.text_input(
-            "2. Tensión de Línea [kV]:",
-            value=obtener_val("ac_tension_kv", "0,48"),
-            key=f"ac_tkv_{ver}",
-            help="Nivel de tensión de línea trifásico en kV (ej. 0,48 o 0,80)."
+        es_048 = plantilla_ac.startswith("Configuración 0,48")
+        es_080 = plantilla_ac.startswith("Configuración 0,80")
+
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            ac_fases = st.text_input("Sistema AC:", value=obtener_val("ac_fases", r"$3~\phi$"), key=f"ac_fases_{ver}")
+            ac_etiqueta_pot = st.text_input("Etiqueta fila Potencia:", value=obtener_val("ac_etiqueta_pot", "Potencia" if not es_080 else "Potencia [kVA]"), key=f"ac_epot_{ver}")
+            ac_potencia = st.text_input("Potencia en tabla:", value=pot_proyecto_def, key=f"ac_pot_{ver}")
+        with c2:
+            def_tkv = "0,48" if es_048 else ("0,8" if es_080 else "0,48")
+            def_imax = "1081" if es_048 else ("775" if es_080 else "1081")
+            ac_tension_kv = st.text_input("Tensión de Línea [kV]:", value=obtener_val("ac_tension_kv", def_tkv), key=f"ac_tkv_{ver}")
+            ac_corriente_max = st.text_input("Intensidad máxima [A]:", value=obtener_val("ac_corriente_max", def_imax), key=f"ac_imax_{ver}")
+        with c3:
+            def_fc = "1,25"
+            def_ptab = "1353*" if es_048 else ("967,6" if es_080 else "1353*")
+            ac_factor_carga = st.text_input("Factor de carga continua:", value=obtener_val("ac_factor_carga", def_fc), key=f"ac_fc_{ver}")
+            ac_proteccion_tablero = st.text_input(f"Protección en tablero principal (Imax x {ac_factor_carga}) [A]:", value=obtener_val("ac_proteccion_tablero", def_ptab), key=f"ac_ptab_{ver}")
+
+        ac_nota_pie = st.text_input(
+            "Nota al pie de la tabla Sistema AC (editable por el usuario):",
+            value=obtener_val("ac_nota_pie", "*Nota: Valor de protección ajustado a 1360 A." if es_048 else ""),
+            key=f"ac_nota_{ver}",
+            help="El texto que aparecerá al pie de la tabla en cursiva y negrita."
         )
-    with col_in3:
-        ac_factor_carga = st.text_input(
-            "3. Factor de carga continua:",
-            value=obtener_val("ac_factor_carga", "1,25"),
-            key=f"ac_fc_{ver}",
-            help="Factor continuo según normativa RETIE y NTC 2050 (por defecto 1.25 / 125%)."
-        )
-
-    # --- Funciones seguras de conversión y cálculo ---
-    def parse_float_seguro(s_val, default=0.0):
-        if not s_val:
-            return default
-        s_clean = str(s_val).strip().replace(',', '.')
-        m = re.search(r"[-+]?[0-9]*\.?[0-9]+", s_clean)
-        return float(m.group(0)) if m else default
-
-    def extraer_potencia_kw(pot_str):
-        if not pot_str:
-            return 900.0
-        s = str(pot_str).strip().replace(',', '.')
-        m_mw = re.search(r"([0-9]+(?:\.[0-9]+)?)\s*mw", s, re.IGNORECASE)
-        if m_mw:
-            return float(m_mw.group(1)) * 1000.0
-        m_kw = re.search(r"([0-9]+(?:\.[0-9]+)?)\s*(?:kw|kva)", s, re.IGNORECASE)
-        if m_kw:
-            return float(m_kw.group(1))
-        num = parse_float_seguro(s, 900.0)
-        if 0 < num <= 15.0 and "kw" not in s.lower():
-            return num * 1000.0
-        return num
-
-    def extraer_tension_kv(v_str):
-        v = parse_float_seguro(v_str, 0.48)
-        if v > 15.0:  # Si ingresan tensión en voltios (ej. 480 V)
-            return v / 1000.0
-        return v if v > 0 else 0.48
-
-    p_kw = extraer_potencia_kw(ac_potencia)
-    v_kv = extraer_tension_kv(ac_tension_kv)
-    fc_val = parse_float_seguro(ac_factor_carga, 1.25)
-
-    # Fórmula trifásica: I_max = P / (sqrt(3) * V_L)
-    i_nom_calculada = (p_kw / (math.sqrt(3) * v_kv)) if v_kv > 0 else 0.0
-    i_prot_calculada = i_nom_calculada * fc_val
-
-    # Sugerencia automática comercial o calculada:
-    # Para 900 kW y 0.48 kV: i_nom = 1082.53 A -> comercial 1081 A o 1082/1083 A, y protección = 1353*
-    if abs(p_kw - 900.0) < 1.0 and abs(v_kv - 0.48) < 0.01:
-        i_nom_sugerida = "1081"
-        i_prot_sugerida = "1353*"
     else:
-        i_nom_sugerida = str(round(i_nom_calculada))
-        i_prot_sugerida = f"{round(i_prot_calculada)}*"
-
-    # Tarjeta explicativa con las fórmulas aplicadas y valores obtenidos
-    st.info(
-        f"⚡ **Cálculo Automático del Sistema AC:**\n\n"
-        f"• **Corriente nominal ($I_{{\\text{{max}}}}$):** $\\frac{{{p_kw:.1f}\\text{{ kW}}}}{{\\sqrt{{3}} \\times {v_kv:.3f}\\text{{ kV}}}} = \\mathbf{{{i_nom_calculada:.2f}\\text{{ A}}}}$ "
-        f"$\\rightarrow$ Valor en tabla: **{i_nom_sugerida} A**\n\n"
-        f"• **Protección tablero principal ($I_{{\\text{{max}}}} \\times {fc_val}$):** ${i_nom_calculada:.2f}\\text{{ A}} \\times {fc_val:.2f} = \\mathbf{{{i_prot_calculada:.2f}\\text{{ A}}}}$ "
-        f"$\\rightarrow$ Valor en tabla: **{i_prot_sugerida} A**"
-    )
-
-    col_c1, col_c2, col_c3 = st.columns(3)
-    with col_c1:
-        ac_fases = st.text_input(
-            "Sistema AC:",
-            value=obtener_val("ac_fases", r"$3~\phi$"),
-            key=f"ac_fases_{ver}"
-        )
-        ac_etiqueta_pot = st.text_input(
-            "Etiqueta fila Potencia:",
-            value=obtener_val("ac_etiqueta_pot", "Potencia"),
-            key=f"ac_epot_{ver}"
-        )
-    with col_c2:
-        val_imax_prev = obtener_val("ac_corriente_max", i_nom_sugerida)
-        ac_corriente_max = st.text_input(
-            "Intensidad máxima [A]:",
-            value=val_imax_prev,
-            key=f"ac_imax_{ver}",
-            help=f"Calculado automáticamente ({i_nom_calculada:.2f} A). Puedes ajustarlo manualmente si requieres una corriente comercial específica."
-        )
-    with col_c3:
-        val_ptab_prev = obtener_val("ac_proteccion_tablero", i_prot_sugerida)
-        ac_proteccion_tablero = st.text_input(
-            f"Protección en tablero principal (Imax x {ac_factor_carga}) [A]:",
-            value=val_ptab_prev,
-            key=f"ac_ptab_{ver}",
-            help=f"Calculado automáticamente ({i_prot_calculada:.2f} A)."
+        st.write(
+            "Ingresa la **potencia del sistema**, la **tensión de línea** y el **factor de carga continua**. "
+            "El programa calcula automáticamente la **corriente nominal ($I_{\\text{max}}$)** "
+            "y la **protección del tablero principal ($I_{\\text{max}} \\times \\text{Factor}$)**. "
+            "El valor de la nota es editable directamente por el usuario."
         )
 
-    ac_nota_pie = st.text_input(
-        "Nota al pie de la tabla Sistema AC (editable por el usuario):",
-        value=obtener_val("ac_nota_pie", "*Nota: Valor de protección ajustado a 1360 A."),
-        key=f"ac_nota_{ver}",
-        help="El valor de la nota al pie que se imprime debajo de la tabla en cursiva y negrita."
-    )
+        col_in1, col_in2, col_in3 = st.columns(3)
+        with col_in1:
+            ac_potencia = st.text_input(
+                "1. Potencia del sistema:",
+                value=pot_proyecto_def,
+                key=f"ac_pot_{ver}",
+                help="Potencia del parque solar o unidad de generación (ej. 900kW, 900 kW, 0.9MW o 900)."
+            )
+        with col_in2:
+            ac_tension_kv = st.text_input(
+                "2. Tensión de Línea [kV]:",
+                value=obtener_val("ac_tension_kv", "0,48"),
+                key=f"ac_tkv_{ver}",
+                help="Nivel de tensión de línea trifásico en kV (ej. 0,48 o 0,80)."
+            )
+        with col_in3:
+            ac_factor_carga = st.text_input(
+                "3. Factor de carga continua:",
+                value=obtener_val("ac_factor_carga", "1,25"),
+                key=f"ac_fc_{ver}",
+                help="Factor continuo según normativa RETIE y NTC 2050 (por defecto 1.25 / 125%)."
+            )
+
+        # --- Funciones seguras de conversión y cálculo ---
+        def parse_float_seguro(s_val, default=0.0):
+            if not s_val:
+                return default
+            s_clean = str(s_val).strip().replace(',', '.')
+            m = re.search(r"[-+]?[0-9]*\.?[0-9]+", s_clean)
+            return float(m.group(0)) if m else default
+
+        def extraer_potencia_kw(pot_str):
+            if not pot_str:
+                return 900.0
+            s = str(pot_str).strip().replace(',', '.')
+            m_mw = re.search(r"([0-9]+(?:\.[0-9]+)?)\s*mw", s, re.IGNORECASE)
+            if m_mw:
+                return float(m_mw.group(1)) * 1000.0
+            m_kw = re.search(r"([0-9]+(?:\.[0-9]+)?)\s*(?:kw|kva)", s, re.IGNORECASE)
+            if m_kw:
+                return float(m_kw.group(1))
+            num = parse_float_seguro(s, 900.0)
+            if 0 < num <= 15.0 and "kw" not in s.lower():
+                return num * 1000.0
+            return num
+
+        def extraer_tension_kv(v_str):
+            v = parse_float_seguro(v_str, 0.48)
+            if v > 15.0:
+                return v / 1000.0
+            return v if v > 0 else 0.48
+
+        p_kw = extraer_potencia_kw(ac_potencia)
+        v_kv = extraer_tension_kv(ac_tension_kv)
+        fc_val = parse_float_seguro(ac_factor_carga, 1.25)
+
+        # Fórmula trifásica: I_max = P / (sqrt(3) * V_L)
+        i_nom_calculada = (p_kw / (math.sqrt(3) * v_kv)) if v_kv > 0 else 0.0
+        i_prot_calculada = i_nom_calculada * fc_val
+
+        # Sugerencia comercial para 900 kW / 0.48 kV
+        if abs(p_kw - 900.0) < 1.0 and abs(v_kv - 0.48) < 0.01:
+            i_nom_sugerida = "1081"
+            i_prot_sugerida = "1353*"
+        else:
+            i_nom_sugerida = str(round(i_nom_calculada))
+            i_prot_sugerida = f"{round(i_prot_calculada)}*"
+
+        # Tarjeta explicativa con las fórmulas aplicadas y valores obtenidos
+        st.info(
+            f"⚡ **Cálculo Automático del Sistema AC:**\n\n"
+            f"• **Corriente nominal ($I_{{\\text{{max}}}}$):** $\\frac{{{p_kw:.1f}\\text{{ kW}}}}{{\\sqrt{{3}} \\times {v_kv:.3f}\\text{{ kV}}}} = \\mathbf{{{i_nom_calculada:.2f}\\text{{ A}}}}$ "
+            f"$\\rightarrow$ Valor en tabla: **{i_nom_sugerida} A**\n\n"
+            f"• **Protección tablero principal ($I_{{\\text{{max}}}} \\times {fc_val}$):** ${i_nom_calculada:.2f}\\text{{ A}} \\times {fc_val:.2f} = \\mathbf{{{i_prot_calculada:.2f}\\text{{ A}}}}$ "
+            f"$\\rightarrow$ Valor en tabla: **{i_prot_sugerida} A**"
+        )
+
+        col_c1, col_c2, col_c3 = st.columns(3)
+        with col_c1:
+            ac_fases = st.text_input(
+                "Sistema AC:",
+                value=obtener_val("ac_fases", r"$3~\phi$"),
+                key=f"ac_fases_{ver}"
+            )
+            ac_etiqueta_pot = st.text_input(
+                "Etiqueta fila Potencia:",
+                value=obtener_val("ac_etiqueta_pot", "Potencia"),
+                key=f"ac_epot_{ver}"
+            )
+        with col_c2:
+            val_imax_prev = obtener_val("ac_corriente_max", i_nom_sugerida)
+            ac_corriente_max = st.text_input(
+                "Intensidad máxima [A]:",
+                value=val_imax_prev,
+                key=f"ac_imax_{ver}",
+                help=f"Calculado automáticamente ({i_nom_calculada:.2f} A). Puedes ajustarlo manualmente si requieres una corriente comercial específica."
+            )
+        with col_c3:
+            val_ptab_prev = obtener_val("ac_proteccion_tablero", i_prot_sugerida)
+            ac_proteccion_tablero = st.text_input(
+                f"Protección en tablero principal (Imax x {ac_factor_carga}) [A]:",
+                value=val_ptab_prev,
+                key=f"ac_ptab_{ver}",
+                help=f"Calculado automáticamente ({i_prot_calculada:.2f} A)."
+            )
+
+        ac_nota_pie = st.text_input(
+            "Nota al pie de la tabla Sistema AC (editable por el usuario):",
+            value=obtener_val("ac_nota_pie", "*Nota: Valor de protección ajustado a 1360 A."),
+            key=f"ac_nota_{ver}",
+            help="El valor de la nota al pie que se imprime debajo de la tabla en cursiva y negrita."
+        )
 
     # Vista previa exacta de la TABLA 1 tal como se imprime en el PDF
     with st.expander("👁️ Vista Previa en Vivo: TABLA 1. Sistema AC (Idéntica al PDF)", expanded=True):

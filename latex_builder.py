@@ -262,12 +262,81 @@ def generar_preambulo():
 """
 
 def formatear_celda_cambio(val):
-    """Si la celda inicia con '*', le aplica \\cellcolor{yellow}."""
+    """Si la celda contiene '*', le aplica \\cellcolor{yellow}."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return ""
     txt = str(val).strip()
-    if txt.startswith("*"):
-        limpio = escapar_latex(txt[1:].strip())
+    if "*" in txt:
+        limpio = escapar_latex(txt.replace("*", "").strip())
         return f"\\cellcolor{{yellow}}{limpio}"
     return escapar_latex(txt)
+
+def generar_bloque_tabla_cambio_latex(df, caption, label):
+    if df is None or not isinstance(df, pd.DataFrame) or df.empty:
+        return ""
+    cols = list(df.columns)
+    es_4_col = len(cols) <= 4 or "Pick Up [Aprim]" in cols or "Pick Up [A_prim]" in cols
+    filas = []
+    if es_4_col:
+        for _, r in df.iterrows():
+            c0 = escapar_latex(r.iloc[0]) if len(r) > 0 else ""
+            c1 = formatear_celda_cambio(r.iloc[1]) if len(r) > 1 else ""
+            c2 = formatear_celda_cambio(r.iloc[2]) if len(r) > 2 else ""
+            c3 = formatear_celda_cambio(r.iloc[3]) if len(r) > 3 else ""
+            filas.append(f"            {c0} & {c1} & {c2} & {c3} \\\\ \\hline")
+        str_filas = "\n".join(filas)
+        return f"""
+\\begin{{table}}[H]
+    \\centering
+    \\captionsetup{{hypcap=false}}
+    \\captionof{{table}}{{{caption}}}
+    \\label{{{label}}}
+    \\begingroup
+    \\adjustbox{{max width=\\textwidth}}{{%
+        \\setlength{{\\tabcolsep}}{{8pt}}
+        \\renewcommand{{\\arraystretch}}{{1.3}}
+        \\begin{{tabular}}{{|l|c|c|c|}}
+            \\hline
+            \\rowcolor{{azulSeyep}}
+            \\multicolumn{{1}}{{|c|}}{{\\color{{white}}\\textbf{{Parámetro}}}} & \\color{{white}}\\textbf{{Pick Up [Aprim]}} & \\color{{white}}\\textbf{{DIAL [s]}} & \\color{{white}}\\textbf{{Curva}} \\\\ \\hline
+{str_filas}
+        \\end{{tabular}}%
+    }}
+    \\endgroup
+\\end{{table}}
+"""
+    else:
+        for _, r in df.iterrows():
+            par = escapar_latex(r.get("Parámetro", r.iloc[0] if len(r) > 0 else ""))
+            pa = escapar_latex(r.get("Pick Up Actual", r.iloc[1] if len(r) > 1 else ""))
+            da = escapar_latex(r.get("Dial Actual", r.iloc[2] if len(r) > 2 else ""))
+            ca = escapar_latex(r.get("Curva Actual", r.iloc[3] if len(r) > 3 else ""))
+            pp = formatear_celda_cambio(r.get("Pick Up Propuesto", r.iloc[4] if len(r) > 4 else ""))
+            dp = formatear_celda_cambio(r.get("Dial Propuesto", r.iloc[5] if len(r) > 5 else ""))
+            cp = formatear_celda_cambio(r.get("Curva Propuesta", r.iloc[6] if len(r) > 6 else ""))
+            filas.append(f"            {par} & {pa} & {da} & {ca} & {pp} & {dp} & {cp} \\\\ \\hline")
+        str_filas = "\n".join(filas)
+        return f"""
+\\begin{{table}}[H]
+    \\centering
+    \\captionsetup{{hypcap=false}}
+    \\captionof{{table}}{{{caption}}}
+    \\label{{{label}}}
+    \\begingroup
+    \\adjustbox{{max width=\\textwidth}}{{%
+        \\renewcommand{{\\arraystretch}}{{1.5}}
+        \\begin{{tabular}}{{|c|c|c|c|c|c|c|}}
+            \\hline
+            \\rowcolor{{azulSeyep}}
+            \\textbf{{\\color{{white}} }} & \\multicolumn{{3}}{{c|}}{{\\textbf{{\\color{{white}}Ajuste Actual}}}} & \\multicolumn{{3}}{{c|}}{{\\textbf{{\\color{{white}}Ajuste Propuesto}}}} \\\\ \\cline{{2-7}}
+            \\rowcolor{{azulSeyep}}
+            \\textbf{{\\color{{white}}\\smash{{\\raisebox{{2.2ex}}{{Parámetro}}}}}} & \\textbf{{\\color{{white}}Pick Up [A\\_prim]}} & \\textbf{{\\color{{white}}Dial [s]}} & \\textbf{{\\color{{white}}Curva}} & \\textbf{{\\color{{white}}Pick Up [A\\_prim]}} & \\textbf{{\\color{{white}}Dial [s]}} & \\textbf{{\\color{{white}}Curva}} \\\\ \\hline
+{str_filas}
+        \\end{{tabular}}
+    }}
+    \\endgroup
+\\end{{table}}
+"""
 
 def compilar_estudio_latex(params):
     if params is None:
@@ -539,6 +608,11 @@ Para la definición del umbral de operación de la función de sobretensión de 
         bloque_sec_59n = ""
 
     # 5. Sección 1.5 (Sobrecorriente 51/50 y 51N/50N)
+    usar_imagen_ajustes_or = bool(params.get("usar_imagen_ajustes_or", False))
+    archivo_img_ajustes_or = params.get("archivo_img_ajustes_or", "AjustesEquiposOR.png")
+    caption_img_ajustes_or = escapar_latex(params.get("caption_img_ajustes_or", "Ajustes de sobrecorriente y recierre suministrados por el OR."))
+    label_img_ajustes_or = params.get("label_img_ajustes_or", "tab:ajustesEquiposOR")
+
     incluir_reco_cabecera = params.get("incluir_reco_cabecera", True)
     incluir_reco_cto = params.get("incluir_reco_cto", False)
     df_reco_cab = params.get("df_reco_cabecera", None)
@@ -546,25 +620,45 @@ Para la definición del umbral de operación de la función de sobretensión de 
     txt_recierre_or = escapar_latex(params.get("txt_recierre_or", "El equipo cuentan con esquema de recierre de 1+1 ambos recierres con un tiempo muerto de 15 segundos."))
 
     bloques_recos_or = []
-    if incluir_reco_cabecera:
-        filas_cab = []
-        if df_reco_cab is not None and isinstance(df_reco_cab, pd.DataFrame) and not df_reco_cab.empty:
-            for _, r in df_reco_cab.iterrows():
-                p1 = escapar_latex(r.get("Parámetro", ""))
-                p2 = escapar_latex(r.get("Pick Up [Aprim]", ""))
-                p3 = escapar_latex(r.get("DIAL [s]", ""))
-                p4 = escapar_latex(r.get("Curva", ""))
-                filas_cab.append(f"            {p1} & {p2} & {p3} & {p4} \\\\ \\hline")
-        if not filas_cab:
-            filas_cab = [
-                "            ANSI 51 & 250 & 0,09 & IEC - EI \\\\ \\hline",
-                "            ANSI 50 & 250 & 0,15 & DT \\\\ \\hline",
-                "            ANSI 50-2 & 2400 & 0,0 & DT \\\\ \\hline",
-                "            ANSI 51N & 120 & 0,38 & IEC - EI \\\\ \\hline",
-                "            ANSI 50N & 2400 & 0,0 & DT \\\\ \\hline",
-            ]
-        str_filas_cab = "\n".join(filas_cab)
+    if usar_imagen_ajustes_or:
+        cmd_img_or = incluir_imagen_segura(archivo_img_ajustes_or, "width=\\textwidth, height=0.65\\textheight, keepaspectratio")
         bloques_recos_or.append(f"""
+\\begin{{center}}
+    \\begin{{minipage}}{{1\\textwidth}}
+        \\centering
+        \\captionsetup{{hypcap=false}}
+        \\captionof{{table}}{{{caption_img_ajustes_or}}}
+        \\label{{{label_img_ajustes_or}}}
+        \\phantomsection\\label{{tab:ajustesrecoCabecera}}%
+        \\vspace{{0.2cm}}
+        \\begingroup
+        \\adjustbox{{max width=\\textwidth}}{{%
+            {cmd_img_or}
+        }}
+        \\endgroup
+    \\end{{minipage}}
+\\end{{center}}
+""")
+    else:
+        if incluir_reco_cabecera:
+            filas_cab = []
+            if df_reco_cab is not None and isinstance(df_reco_cab, pd.DataFrame) and not df_reco_cab.empty:
+                for _, r in df_reco_cab.iterrows():
+                    p1 = escapar_latex(r.get("Parámetro", ""))
+                    p2 = escapar_latex(r.get("Pick Up [Aprim]", ""))
+                    p3 = escapar_latex(r.get("DIAL [s]", ""))
+                    p4 = escapar_latex(r.get("Curva", ""))
+                    filas_cab.append(f"            {p1} & {p2} & {p3} & {p4} \\\\ \\hline")
+            if not filas_cab:
+                filas_cab = [
+                    "            ANSI 51 & 250 & 0,09 & IEC - EI \\\\ \\hline",
+                    "            ANSI 50 & 250 & 0,15 & DT \\\\ \\hline",
+                    "            ANSI 50-2 & 2400 & 0,0 & DT \\\\ \\hline",
+                    "            ANSI 51N & 120 & 0,38 & IEC - EI \\\\ \\hline",
+                    "            ANSI 50N & 2400 & 0,0 & DT \\\\ \\hline",
+                ]
+            str_filas_cab = "\n".join(filas_cab)
+            bloques_recos_or.append(f"""
 \\begin{{center}}
     \\begin{{minipage}}{{1\\textwidth}}
         \\centering
@@ -586,24 +680,24 @@ Para la definición del umbral de operación de la función de sobretensión de 
 \\end{{center}}
 """)
 
-    if incluir_reco_cto:
-        filas_cto = []
-        if df_reco_cto is not None and isinstance(df_reco_cto, pd.DataFrame) and not df_reco_cto.empty:
-            for _, r in df_reco_cto.iterrows():
-                p1 = escapar_latex(r.get("Parámetro", ""))
-                p2 = escapar_latex(r.get("Pick Up [Aprim]", ""))
-                p3 = escapar_latex(r.get("DIAL [s]", ""))
-                p4 = escapar_latex(r.get("Curva", ""))
-                filas_cto.append(f"            {p1} & {p2} & {p3} & {p4} \\\\ \\hline")
-        if not filas_cto:
-            filas_cto = [
-                "            ANSI 51 & 65 & 0,1 & IEC - NI \\\\ \\hline",
-                "            ANSI 50 & 117 & 0,05 & DT \\\\ \\hline",
-                "            ANSI 51N & 22 & 0,1 & IEC - NI \\\\ \\hline",
-                "            ANSI 50N & 63,8 & 0,05 & DT \\\\ \\hline",
-            ]
-        str_filas_cto = "\n".join(filas_cto)
-        bloques_recos_or.append(f"""
+        if incluir_reco_cto:
+            filas_cto = []
+            if df_reco_cto is not None and isinstance(df_reco_cto, pd.DataFrame) and not df_reco_cto.empty:
+                for _, r in df_reco_cto.iterrows():
+                    p1 = escapar_latex(r.get("Parámetro", ""))
+                    p2 = escapar_latex(r.get("Pick Up [Aprim]", ""))
+                    p3 = escapar_latex(r.get("DIAL [s]", ""))
+                    p4 = escapar_latex(r.get("Curva", ""))
+                    filas_cto.append(f"            {p1} & {p2} & {p3} & {p4} \\\\ \\hline")
+            if not filas_cto:
+                filas_cto = [
+                    "            ANSI 51 & 65 & 0,1 & IEC - NI \\\\ \\hline",
+                    "            ANSI 50 & 117 & 0,05 & DT \\\\ \\hline",
+                    "            ANSI 51N & 22 & 0,1 & IEC - NI \\\\ \\hline",
+                    "            ANSI 50N & 63,8 & 0,05 & DT \\\\ \\hline",
+                ]
+            str_filas_cto = "\n".join(filas_cto)
+            bloques_recos_or.append(f"""
 \\begin{{center}}
     \\begin{{minipage}}{{1\\textwidth}}
         \\centering
@@ -625,23 +719,23 @@ Para la definición del umbral de operación de la función de sobretensión de 
 \\end{{center}}
 """)
 
-    equipos_or_extra = params.get("equipos_or_extra", [])
-    if isinstance(equipos_or_extra, list):
-        for idx_ex, eq_ex in enumerate(equipos_or_extra):
-            nom_ex = escapar_latex(eq_ex.get("nombre", f"Equipo OR {idx_ex + 1}"))
-            lbl_ex = eq_ex.get("label", f"tab:ajustesrecoExtra{idx_ex + 1}")
-            df_ex = eq_ex.get("df", None)
-            filas_ex = []
-            if df_ex is not None and isinstance(df_ex, pd.DataFrame) and not df_ex.empty:
-                for _, r in df_ex.iterrows():
-                    p1 = escapar_latex(r.get("Parámetro", ""))
-                    p2 = escapar_latex(r.get("Pick Up [Aprim]", ""))
-                    p3 = escapar_latex(r.get("DIAL [s]", ""))
-                    p4 = escapar_latex(r.get("Curva", ""))
-                    filas_ex.append(f"            {p1} & {p2} & {p3} & {p4} \\\\ \\hline")
-            if filas_ex:
-                str_filas_ex = "\n".join(filas_ex)
-                bloques_recos_or.append(f"""
+        equipos_or_extra = params.get("equipos_or_extra", [])
+        if isinstance(equipos_or_extra, list):
+            for idx_ex, eq_ex in enumerate(equipos_or_extra):
+                nom_ex = escapar_latex(eq_ex.get("nombre", f"Equipo OR {idx_ex + 1}"))
+                lbl_ex = eq_ex.get("label", f"tab:ajustesrecoExtra{idx_ex + 1}")
+                df_ex = eq_ex.get("df", None)
+                filas_ex = []
+                if df_ex is not None and isinstance(df_ex, pd.DataFrame) and not df_ex.empty:
+                    for _, r in df_ex.iterrows():
+                        p1 = escapar_latex(r.get("Parámetro", ""))
+                        p2 = escapar_latex(r.get("Pick Up [Aprim]", ""))
+                        p3 = escapar_latex(r.get("DIAL [s]", ""))
+                        p4 = escapar_latex(r.get("Curva", ""))
+                        filas_ex.append(f"            {p1} & {p2} & {p3} & {p4} \\\\ \\hline")
+                if filas_ex:
+                    str_filas_ex = "\n".join(filas_ex)
+                    bloques_recos_or.append(f"""
 \\begin{{center}}
     \\begin{{minipage}}{{1\\textwidth}}
         \\centering
@@ -663,8 +757,26 @@ Para la definición del umbral de operación de la función de sobretensión de 
 \\end{{center}}
 """)
 
-    bloques_recos_or.append(txt_recierre_or)
+        bloques_recos_or.append(txt_recierre_or)
+
     contenido_parametros_recos_or = "\n".join(bloques_recos_or)
+
+    if usar_imagen_ajustes_or:
+        texto_intro_sc = str(params.get("texto_intro_sobrecorriente", "")).strip()
+        if not texto_intro_sc:
+            texto_intro_sc = r"En la \cref{tab:ajustesEquiposOR} se muestran todos los ajustes de sobrecorriente y recierre suministrados por el OR."
+    else:
+        texto_intro_sc = str(params.get("texto_intro_sobrecorriente_manual", "")).strip()
+        if not texto_intro_sc:
+            sc_val = str(params.get("texto_intro_sobrecorriente", "")).strip()
+            if sc_val and r"\cref{tab:ajustesEquiposOR}" not in sc_val:
+                texto_intro_sc = sc_val
+            else:
+                texto_intro_sc = (
+                    r"Antes de calcular las protecciones del reconectador del punto de conexión, es importante conocer los ajustes "
+                    r"de los elementos de protección aguas arriba del equipo, los cuales fueron suministrados por el OR, en la "
+                    r"\cref{tab:ajustesrecoCabecera} se muestran los ajustes de los elementos de protección de sobrecorriente existentes en el circuito:"
+                )
 
     tipo_proteccion_principal = params.get("tipo_proteccion_principal", "Relé o Reconectador")
     es_modo_breaker = "Breaker" in str(tipo_proteccion_principal)
@@ -842,75 +954,23 @@ Dado esto:
     if es_con_cambio:
         if params.get("incluir_tabla_cambio_cab", False):
             df_ccab = params.get("df_cambio_cab", None)
-            f_ccab = []
-            if df_ccab is not None and isinstance(df_ccab, pd.DataFrame) and not df_ccab.empty:
-                for _, r in df_ccab.iterrows():
-                    par = escapar_latex(r.get("Parámetro", ""))
-                    pa = escapar_latex(r.get("Pick Up Actual", ""))
-                    da = escapar_latex(r.get("Dial Actual", ""))
-                    ca = escapar_latex(r.get("Curva Actual", ""))
-                    pp = formatear_celda_cambio(r.get("Pick Up Propuesto", ""))
-                    dp = formatear_celda_cambio(r.get("Dial Propuesto", ""))
-                    cp = formatear_celda_cambio(r.get("Curva Propuesta", ""))
-                    f_ccab.append(f"            {par} & {pa} & {da} & {ca} & {pp} & {dp} & {cp} \\\\ \\hline")
-            str_f_ccab = "\n".join(f_ccab)
-            bloques_tablas_cambio.append(f"""
-\\begin{{table}}[H]
-    \\centering
-    \\captionsetup{{hypcap=false}}
-    \\captionof{{table}}{{Ajustes de protección propuestos para el Reconectador \\recocabecera.}}
-    \\label{{tab:cambioAjustescabecera}}
-    \\begingroup
-    \\adjustbox{{max width=\\textwidth}}{{%
-        \\renewcommand{{\\arraystretch}}{{1.5}}
-        \\begin{{tabular}}{{|c|c|c|c|c|c|c|}}
-            \\hline
-            \\rowcolor{{azulSeyep}}
-            \\textbf{{\\color{{white}} }} & \\multicolumn{{3}}{{c|}}{{\\textbf{{\\color{{white}}Ajuste Actual}}}} & \\multicolumn{{3}}{{c|}}{{\\textbf{{\\color{{white}}Ajuste Propuesto}}}} \\\\ \\cline{{2-7}}
-            \\rowcolor{{azulSeyep}}
-            \\textbf{{\\color{{white}}\\smash{{\\raisebox{{2.2ex}}{{Parámetro}}}}}} & \\textbf{{\\color{{white}}Pick Up [A\\_prim]}} & \\textbf{{\\color{{white}}Dial [s]}} & \\textbf{{\\color{{white}}Curva}} & \\textbf{{\\color{{white}}Pick Up [A\\_prim]}} & \\textbf{{\\color{{white}}Dial [s]}} & \\textbf{{\\color{{white}}Curva}} \\\\ \\hline
-{str_f_ccab}
-        \\end{{tabular}}
-    }}
-    \\endgroup
-\\end{{table}}
-""")
+            bloque_cab = generar_bloque_tabla_cambio_latex(
+                df_ccab,
+                r"Ajustes de protección propuestos para el Reconectador \recocabecera.",
+                "tab:cambioAjustescabecera",
+            )
+            if bloque_cab:
+                bloques_tablas_cambio.append(bloque_cab)
 
         if params.get("incluir_tabla_cambio_cto", False):
             df_ccto = params.get("df_cambio_cto", None)
-            f_ccto = []
-            if df_ccto is not None and isinstance(df_ccto, pd.DataFrame) and not df_ccto.empty:
-                for _, r in df_ccto.iterrows():
-                    par = escapar_latex(r.get("Parámetro", ""))
-                    pa = escapar_latex(r.get("Pick Up Actual", ""))
-                    da = escapar_latex(r.get("Dial Actual", ""))
-                    ca = escapar_latex(r.get("Curva Actual", ""))
-                    pp = formatear_celda_cambio(r.get("Pick Up Propuesto", ""))
-                    dp = formatear_celda_cambio(r.get("Dial Propuesto", ""))
-                    cp = formatear_celda_cambio(r.get("Curva Propuesta", ""))
-                    f_ccto.append(f"            {par} & {pa} & {da} & {ca} & {pp} & {dp} & {cp} \\\\ \\hline")
-            str_f_ccto = "\n".join(f_ccto)
-            bloques_tablas_cambio.append(f"""
-\\begin{{table}}[H]
-    \\centering
-    \\captionsetup{{hypcap=false}}
-    \\captionof{{table}}{{Ajustes de protección propuestos para el Reconectador \\recoCTO.}}
-    \\label{{tab:cambioAjustes}}
-    \\begingroup
-    \\adjustbox{{max width=\\textwidth}}{{%
-        \\renewcommand{{\\arraystretch}}{{1.5}}
-        \\begin{{tabular}}{{|c|c|c|c|c|c|c|}}
-            \\hline
-            \\rowcolor{{azulSeyep}}
-            \\textbf{{\\color{{white}} }} & \\multicolumn{{3}}{{c|}}{{\\textbf{{\\color{{white}}Ajuste Actual}}}} & \\multicolumn{{3}}{{c|}}{{\\textbf{{\\color{{white}}Ajuste Propuesto}}}} \\\\ \\cline{{2-7}}
-            \\rowcolor{{azulSeyep}}
-            \\textbf{{\\color{{white}}\\smash{{\\raisebox{{2.2ex}}{{Parámetro}}}}}} & \\textbf{{\\color{{white}}Pick Up [A\\_prim]}} & \\textbf{{\\color{{white}}Dial [s]}} & \\textbf{{\\color{{white}}Curva}} & \\textbf{{\\color{{white}}Pick Up [A\\_prim]}} & \\textbf{{\\color{{white}}Dial [s]}} & \\textbf{{\\color{{white}}Curva}} \\\\ \\hline
-{str_f_ccto}
-        \\end{{tabular}}
-    }}
-    \\endgroup
-\\end{{table}}
-""")
+            bloque_cto = generar_bloque_tabla_cambio_latex(
+                df_ccto,
+                r"Ajustes de protección propuestos para el Reconectador \recoCTO.",
+                "tab:cambioAjustes",
+            )
+            if bloque_cto:
+                bloques_tablas_cambio.append(bloque_cto)
 
         cambios_or_extra = params.get("cambios_or_extra", [])
         if isinstance(cambios_or_extra, list):
@@ -918,40 +978,13 @@ Dado esto:
                 nom_cex = escapar_latex(c_ex.get("nombre", f"Equipo OR {idx_cex + 1}"))
                 lbl_cex = c_ex.get("label", f"tab:cambioAjustesExtra{idx_cex + 1}")
                 df_cex = c_ex.get("df", None)
-                f_cex = []
-                if df_cex is not None and isinstance(df_cex, pd.DataFrame) and not df_cex.empty:
-                    for _, r in df_cex.iterrows():
-                        par = escapar_latex(r.get("Parámetro", ""))
-                        pa = escapar_latex(r.get("Pick Up Actual", ""))
-                        da = escapar_latex(r.get("Dial Actual", ""))
-                        ca = escapar_latex(r.get("Curva Actual", ""))
-                        pp = formatear_celda_cambio(r.get("Pick Up Propuesto", ""))
-                        dp = formatear_celda_cambio(r.get("Dial Propuesto", ""))
-                        cp = formatear_celda_cambio(r.get("Curva Propuesta", ""))
-                        f_cex.append(f"            {par} & {pa} & {da} & {ca} & {pp} & {dp} & {cp} \\\\ \\hline")
-                if f_cex:
-                    str_f_cex = "\n".join(f_cex)
-                    bloques_tablas_cambio.append(f"""
-\\begin{{table}}[H]
-    \\centering
-    \\captionsetup{{hypcap=false}}
-    \\captionof{{table}}{{Ajustes de protección propuestos para {nom_cex}.}}
-    \\label{{{lbl_cex}}}
-    \\begingroup
-    \\adjustbox{{max width=\\textwidth}}{{%
-        \\renewcommand{{\\arraystretch}}{{1.5}}
-        \\begin{{tabular}}{{|c|c|c|c|c|c|c|}}
-            \\hline
-            \\rowcolor{{azulSeyep}}
-            \\textbf{{\\color{{white}} }} & \\multicolumn{{3}}{{c|}}{{\\textbf{{\\color{{white}}Ajuste Actual}}}} & \\multicolumn{{3}}{{c|}}{{\\textbf{{\\color{{white}}Ajuste Propuesto}}}} \\\\ \\cline{{2-7}}
-            \\rowcolor{{azulSeyep}}
-            \\textbf{{\\color{{white}}\\smash{{\\raisebox{{2.2ex}}{{Parámetro}}}}}} & \\textbf{{\\color{{white}}Pick Up [A\\_prim]}} & \\textbf{{\\color{{white}}Dial [s]}} & \\textbf{{\\color{{white}}Curva}} & \\textbf{{\\color{{white}}Pick Up [A\\_prim]}} & \\textbf{{\\color{{white}}Dial [s]}} & \\textbf{{\\color{{white}}Curva}} \\\\ \\hline
-{str_f_cex}
-        \\end{{tabular}}
-    }}
-    \\endgroup
-\\end{{table}}
-""")
+                bloque_ex = generar_bloque_tabla_cambio_latex(
+                    df_cex,
+                    f"Ajustes de protección propuestos para {nom_cex}.",
+                    lbl_cex,
+                )
+                if bloque_ex:
+                    bloques_tablas_cambio.append(bloque_ex)
 
         nota_dt = str(params.get("nota_disparo_transferido", "")).strip()
         if nota_dt:
@@ -1363,7 +1396,7 @@ Conforme a las notas del acuerdo CNO, se tienen las siguientes observaciones sob
 {texto_anti_isla}
 
 \\subsection{{\\textit{{Cálculos para las protecciones 51/50 y 51N/50N}}}}
-Antes de calcular las protecciones del reconectador del punto de conexión, es importante conocer los ajustes de los elementos de protección aguas arriba del equipo, los cuales fueron suministrados por el OR, en la \\cref{{tab:ajustesrecoCabecera}} se muestran los ajustes de los elementos de protección de sobrecorriente existentes en el circuito:
+{texto_intro_sc}
 
 \\ParametrosRECOSOR
 

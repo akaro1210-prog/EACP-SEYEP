@@ -1,12 +1,20 @@
+import os
 import streamlit as st
 import pandas as pd
-from project_manager import obtener_val, obtener_df, obtener_ver, editor_tabla_seguro
+from project_manager import (
+    obtener_val,
+    obtener_df,
+    obtener_ver,
+    editor_tabla_seguro,
+    guardar_archivo_subido,
+    estado_archivo,
+)
 
 def render():
     ver = obtener_ver()
     st.subheader("🛡️ Sección 1.5: Cálculos de Sobrecorriente (51/50 y 51N/50N)")
     st.write(
-        "Configura las tablas de ajustes actuales de los equipos del OR (`\\ParametrosRECOSOR`), "
+        "Configura las tablas o imagen de ajustes actuales de los equipos del OR (`\\ParametrosRECOSOR`), "
         "los cálculos de sobrecorriente del proyecto (`\\Ajustessobrecorrienteproyecto`) y, de forma opcional, "
         "las propuestas de cambio de ajustes para cualquier cantidad de equipos del OR."
     )
@@ -14,107 +22,157 @@ def render():
     # ================= 1. EQUIPOS ACTUALES DEL OR (\ParametrosRECOSOR) =================
     st.markdown("### 1. Ajustes Actuales de Equipos del OR (`\\ParametrosRECOSOR`)")
 
-    col_or1, col_or2 = st.columns(2)
-    with col_or1:
-        incluir_reco_cabecera = st.checkbox(
-            "✅ Incluir tabla Reconectador de Cabecera (`\\recocabecera`)",
-            value=bool(obtener_val("incluir_reco_cabecera", True)),
-            key=f"chk_inc_reco_cab_{ver}"
-        )
-    with col_or2:
-        incluir_reco_cto = st.checkbox(
-            "✅ Incluir tabla Reconectador del Circuito (`\\recoCTO`)",
-            value=bool(obtener_val("incluir_reco_cto", False)),
-            key=f"chk_inc_reco_cto_{ver}"
-        )
-
-    df_cabecera_default = pd.DataFrame([
-        {"Parámetro": "ANSI 51", "Pick Up [Aprim]": "250", "DIAL [s]": "0,09", "Curva": "IEC - EI"},
-        {"Parámetro": "ANSI 50", "Pick Up [Aprim]": "250", "DIAL [s]": "0,15", "Curva": "DT"},
-        {"Parámetro": "ANSI 50-2", "Pick Up [Aprim]": "2400", "DIAL [s]": "0,0", "Curva": "DT"},
-        {"Parámetro": "ANSI 51N", "Pick Up [Aprim]": "120", "DIAL [s]": "0,38", "Curva": "IEC - EI"},
-        {"Parámetro": "ANSI 50N", "Pick Up [Aprim]": "2400", "DIAL [s]": "0,0", "Curva": "DT"},
-    ])
-    if incluir_reco_cabecera:
-        st.markdown("#### Tabla `tab:ajustesrecoCabecera` (Reconectador `\\recocabecera`)")
-        df_reco_cabecera = editor_tabla_seguro(
-            obtener_df("df_reco_cabecera", df_cabecera_default),
-            key=f"ed_reco_cab_eacp_{ver}",
-            num_rows="dynamic"
-        )
-    else:
-        df_reco_cabecera = obtener_df("df_reco_cabecera", df_cabecera_default)
-
-    df_cto_default = pd.DataFrame([
-        {"Parámetro": "ANSI 51", "Pick Up [Aprim]": "65", "DIAL [s]": "0,1", "Curva": "IEC - NI"},
-        {"Parámetro": "ANSI 50", "Pick Up [Aprim]": "117", "DIAL [s]": "0,05", "Curva": "DT"},
-        {"Parámetro": "ANSI 51N", "Pick Up [Aprim]": "22", "DIAL [s]": "0,1", "Curva": "IEC - NI"},
-        {"Parámetro": "ANSI 50N", "Pick Up [Aprim]": "63,8", "DIAL [s]": "0,05", "Curva": "DT"},
-    ])
-    if incluir_reco_cto:
-        st.markdown("#### Tabla `tab:ajustesrecoCTO` (Reconectador `\\recoCTO`)")
-        df_reco_cto = editor_tabla_seguro(
-            obtener_df("df_reco_cto", df_cto_default),
-            key=f"ed_reco_cto_eacp_{ver}",
-            num_rows="dynamic"
-        )
-    else:
-        df_reco_cto = obtener_df("df_reco_cto", df_cto_default)
-
-    # --- Botones para agregar más equipos actuales del OR ---
-    if "num_equipos_or_extra" not in st.session_state:
-        st.session_state["num_equipos_or_extra"] = 0
-
-    col_btn_add1, col_btn_rem1, _ = st.columns([1, 1, 2])
-    with col_btn_add1:
-        if st.button("➕ Agregar otro equipo del OR", key="btn_add_eq_or"):
-            st.session_state["num_equipos_or_extra"] += 1
-            st.rerun()
-    with col_btn_rem1:
-        if st.session_state["num_equipos_or_extra"] > 0:
-            if st.button("🗑️ Quitar último equipo adicional", key="btn_rem_eq_or"):
-                st.session_state["num_equipos_or_extra"] -= 1
-                st.rerun()
-
-    lista_guardada_eq_or = obtener_val("equipos_or_extra", [])
-    equipos_or_extra = []
-    for idx in range(st.session_state["num_equipos_or_extra"]):
-        num_eq = idx + 1
-        st.markdown(f"#### Equipo Adicional del OR #{num_eq} (`tab:ajustesrecoExtra{num_eq}`)")
-        item_prev = lista_guardada_eq_or[idx] if isinstance(lista_guardada_eq_or, list) and idx < len(lista_guardada_eq_or) else {}
-        nom_def = item_prev.get("nombre", f"Reconectador Auxiliar {num_eq}") if isinstance(item_prev, dict) else f"Reconectador Auxiliar {num_eq}"
-        nombre_eq = st.text_input(
-            f"Nombre / Identificador del Equipo Adicional #{num_eq}:",
-            value=nom_def,
-            key=f"nom_eq_or_extra_{num_eq}_{ver}"
-        )
-        df_extra_default = pd.DataFrame([
-            {"Parámetro": "ANSI 51", "Pick Up [Aprim]": "100", "DIAL [s]": "0,1", "Curva": "IEC - NI"},
-            {"Parámetro": "ANSI 50", "Pick Up [Aprim]": "200", "DIAL [s]": "0,05", "Curva": "DT"},
-            {"Parámetro": "ANSI 51N", "Pick Up [Aprim]": "40", "DIAL [s]": "0,1", "Curva": "IEC - NI"},
-            {"Parámetro": "ANSI 50N", "Pick Up [Aprim]": "120", "DIAL [s]": "0,05", "Curva": "DT"},
-        ])
-        if isinstance(item_prev, dict) and "df" in item_prev:
-            df_extra_init = pd.DataFrame(item_prev["df"]) if isinstance(item_prev["df"], list) else item_prev["df"]
-        else:
-            df_extra_init = df_extra_default
-
-        df_eq_extra = editor_tabla_seguro(
-            df_extra_init,
-            key=f"ed_eq_or_extra_{num_eq}_{ver}",
-            num_rows="dynamic"
-        )
-        equipos_or_extra.append({
-            "nombre": nombre_eq,
-            "label": f"tab:ajustesrecoExtra{num_eq}",
-            "df": df_eq_extra
-        })
-
-    txt_recierre_or = st.text_input(
-        "Nota de esquema de recierre del OR:",
-        value=obtener_val("txt_recierre_or", "El equipo cuentan con esquema de recierre de 1+1 ambos recierres con un tiempo muerto de 15 segundos."),
-        key=f"txt_rec_or_{ver}"
+    usar_imagen_ajustes_or = st.checkbox(
+        "🖼️ Cargar imagen con los ajustes de los equipos del OR (contiene todos los elementos y los recierres)",
+        value=bool(obtener_val("usar_imagen_ajustes_or", False)),
+        key=f"chk_usar_img_ajustes_or_{ver}"
     )
+
+    caption_img_ajustes_or = obtener_val("caption_img_ajustes_or", "Ajustes de sobrecorriente y recierre suministrados por el OR.")
+    texto_intro_def_img = r"En la \cref{tab:ajustesEquiposOR} se muestran todos los ajustes de sobrecorriente y recierre suministrados por el OR."
+    texto_intro_sobrecorriente = obtener_val("texto_intro_sobrecorriente", texto_intro_def_img)
+
+    if usar_imagen_ajustes_or:
+        st.info("ℹ️ Al seleccionar esta opción, se reemplazan las tablas individuales por la tabla con la imagen de todos los elementos y recierres suministrados por el OR.")
+
+        col_up1, col_up2 = st.columns([2, 1])
+        with col_up1:
+            up_img_or = st.file_uploader(
+                f"Seleccionar imagen de ajustes y recierres del OR ({estado_archivo('AjustesEquiposOR.png')}):",
+                type=["png", "jpg", "jpeg"],
+                key=f"up_img_ajustes_or_{ver}"
+            )
+            if guardar_archivo_subido(up_img_or, "AjustesEquiposOR.png"):
+                st.success("✅ Imagen 'AjustesEquiposOR.png' guardada correctamente.")
+        with col_up2:
+            caption_img_ajustes_or = st.text_input(
+                "Título / Leyenda de la tabla (`tab:ajustesEquiposOR`):",
+                value=caption_img_ajustes_or,
+                key=f"cap_img_or_{ver}"
+            )
+
+        texto_intro_sobrecorriente = st.text_area(
+            "Texto introductorio antes de la tabla en el informe:",
+            value=texto_intro_sobrecorriente,
+            height=75,
+            key=f"txt_intro_sc_{ver}"
+        )
+        st.caption("🔗 En el informe PDF, `\\cref{tab:ajustesEquiposOR}` se imprimirá como **TABLA X** con hipervínculo directo a la tabla con la imagen.")
+
+        if os.path.exists("AjustesEquiposOR.png"):
+            with st.expander("👁️ Vista previa de la imagen cargada", expanded=True):
+                st.image("AjustesEquiposOR.png", caption=caption_img_ajustes_or, use_container_width=True)
+        else:
+            st.warning("⚠️ No se ha cargado la imagen aún ('AjustesEquiposOR.png'). En la compilación se mostrará un recuadro indicativo.")
+
+    def render_tablas_individuales_or():
+        col_or1, col_or2 = st.columns(2)
+        with col_or1:
+            inc_cab = st.checkbox(
+                "✅ Incluir tabla Reconectador de Cabecera (`\\recocabecera`)",
+                value=bool(obtener_val("incluir_reco_cabecera", True)),
+                key=f"chk_inc_reco_cab_{ver}"
+            )
+        with col_or2:
+            inc_cto = st.checkbox(
+                "✅ Incluir tabla Reconectador del Circuito (`\\recoCTO`)",
+                value=bool(obtener_val("incluir_reco_cto", False)),
+                key=f"chk_inc_reco_cto_{ver}"
+            )
+
+        df_cabecera_default = pd.DataFrame([
+            {"Parámetro": "ANSI 51", "Pick Up [Aprim]": "250", "DIAL [s]": "0,09", "Curva": "IEC - EI"},
+            {"Parámetro": "ANSI 50", "Pick Up [Aprim]": "250", "DIAL [s]": "0,15", "Curva": "DT"},
+            {"Parámetro": "ANSI 50-2", "Pick Up [Aprim]": "2400", "DIAL [s]": "0,0", "Curva": "DT"},
+            {"Parámetro": "ANSI 51N", "Pick Up [Aprim]": "120", "DIAL [s]": "0,38", "Curva": "IEC - EI"},
+            {"Parámetro": "ANSI 50N", "Pick Up [Aprim]": "2400", "DIAL [s]": "0,0", "Curva": "DT"},
+        ])
+        if inc_cab:
+            st.markdown("#### Tabla `tab:ajustesrecoCabecera` (Reconectador `\\recocabecera`)")
+            df_reco_cab = editor_tabla_seguro(
+                obtener_df("df_reco_cabecera", df_cabecera_default),
+                key=f"ed_reco_cab_eacp_{ver}",
+                num_rows="dynamic"
+            )
+        else:
+            df_reco_cab = obtener_df("df_reco_cabecera", df_cabecera_default)
+
+        df_cto_default = pd.DataFrame([
+            {"Parámetro": "ANSI 51", "Pick Up [Aprim]": "65", "DIAL [s]": "0,1", "Curva": "IEC - NI"},
+            {"Parámetro": "ANSI 50", "Pick Up [Aprim]": "117", "DIAL [s]": "0,05", "Curva": "DT"},
+            {"Parámetro": "ANSI 51N", "Pick Up [Aprim]": "22", "DIAL [s]": "0,1", "Curva": "IEC - NI"},
+            {"Parámetro": "ANSI 50N", "Pick Up [Aprim]": "63,8", "DIAL [s]": "0,05", "Curva": "DT"},
+        ])
+        if inc_cto:
+            st.markdown("#### Tabla `tab:ajustesrecoCTO` (Reconectador `\\recoCTO`)")
+            df_reco_c = editor_tabla_seguro(
+                obtener_df("df_reco_cto", df_cto_default),
+                key=f"ed_reco_cto_eacp_{ver}",
+                num_rows="dynamic"
+            )
+        else:
+            df_reco_c = obtener_df("df_reco_cto", df_cto_default)
+
+        if "num_equipos_or_extra" not in st.session_state:
+            st.session_state["num_equipos_or_extra"] = 0
+
+        col_btn_add1, col_btn_rem1, _ = st.columns([1, 1, 2])
+        with col_btn_add1:
+            if st.button("➕ Agregar otro equipo del OR", key="btn_add_eq_or"):
+                st.session_state["num_equipos_or_extra"] += 1
+                st.rerun()
+        with col_btn_rem1:
+            if st.session_state["num_equipos_or_extra"] > 0:
+                if st.button("🗑️ Quitar último equipo adicional", key="btn_rem_eq_or"):
+                    st.session_state["num_equipos_or_extra"] -= 1
+                    st.rerun()
+
+        lista_guardada_eq_or = obtener_val("equipos_or_extra", [])
+        eq_or_extra = []
+        for idx in range(st.session_state["num_equipos_or_extra"]):
+            num_eq = idx + 1
+            st.markdown(f"#### Equipo Adicional del OR #{num_eq} (`tab:ajustesrecoExtra{num_eq}`)")
+            item_prev = lista_guardada_eq_or[idx] if isinstance(lista_guardada_eq_or, list) and idx < len(lista_guardada_eq_or) else {}
+            nom_def = item_prev.get("nombre", f"Reconectador Auxiliar {num_eq}") if isinstance(item_prev, dict) else f"Reconectador Auxiliar {num_eq}"
+            nombre_eq = st.text_input(
+                f"Nombre / Identificador del Equipo Adicional #{num_eq}:",
+                value=nom_def,
+                key=f"nom_eq_or_extra_{num_eq}_{ver}"
+            )
+            df_extra_default = pd.DataFrame([
+                {"Parámetro": "ANSI 51", "Pick Up [Aprim]": "100", "DIAL [s]": "0,1", "Curva": "IEC - NI"},
+                {"Parámetro": "ANSI 50", "Pick Up [Aprim]": "200", "DIAL [s]": "0,05", "Curva": "DT"},
+                {"Parámetro": "ANSI 51N", "Pick Up [Aprim]": "40", "DIAL [s]": "0,1", "Curva": "IEC - NI"},
+                {"Parámetro": "ANSI 50N", "Pick Up [Aprim]": "120", "DIAL [s]": "0,05", "Curva": "DT"},
+            ])
+            if isinstance(item_prev, dict) and "df" in item_prev:
+                df_extra_init = pd.DataFrame(item_prev["df"]) if isinstance(item_prev["df"], list) else item_prev["df"]
+            else:
+                df_extra_init = df_extra_default
+
+            df_eq_extra = editor_tabla_seguro(
+                df_extra_init,
+                key=f"ed_eq_or_extra_{num_eq}_{ver}",
+                num_rows="dynamic"
+            )
+            eq_or_extra.append({
+                "nombre": nombre_eq,
+                "label": f"tab:ajustesrecoExtra{num_eq}",
+                "df": df_eq_extra
+            })
+
+        txt_rec_or = st.text_input(
+            "Nota de esquema de recierre del OR:",
+            value=obtener_val("txt_recierre_or", "El equipo cuentan con esquema de recierre de 1+1 ambos recierres con un tiempo muerto de 15 segundos."),
+            key=f"txt_rec_or_{ver}"
+        )
+        return inc_cab, inc_cto, df_reco_cab, df_reco_c, eq_or_extra, txt_rec_or
+
+    if usar_imagen_ajustes_or:
+        with st.expander("⚙️ Ver / configurar tablas individuales de respaldo (desactivadas en modo imagen)", expanded=False):
+            incluir_reco_cabecera, incluir_reco_cto, df_reco_cabecera, df_reco_cto, equipos_or_extra, txt_recierre_or = render_tablas_individuales_or()
+    else:
+        incluir_reco_cabecera, incluir_reco_cto, df_reco_cabecera, df_reco_cto, equipos_or_extra, txt_recierre_or = render_tablas_individuales_or()
 
     # ================= 2. CÁLCULOS Y AJUSTES DEL PROYECTO =================
     st.markdown("---")
@@ -337,10 +395,24 @@ def render():
         key=f"chk_con_cambio_ajustes_or_{ver}"
     )
 
+    df_cambio_cab_default = pd.DataFrame([
+        {"Parámetro": "ANSI 51", "Pick Up [Aprim]": "46", "DIAL [s]": "0,05", "Curva": "IEC - NI"},
+        {"Parámetro": "ANSI 50", "Pick Up [Aprim]": "190", "DIAL [s]": "0", "Curva": "DT"},
+        {"Parámetro": "ANSI 51N", "Pick Up [Aprim]": "16", "DIAL [s]": "0,05", "Curva": "IEC - NI"},
+        {"Parámetro": "ANSI 50N", "Pick Up [Aprim]": "240", "DIAL [s]": "0", "Curva": "DT"},
+    ])
+
+    df_cambio_cto_default = pd.DataFrame([
+        {"Parámetro": "ANSI 51", "Pick Up [Aprim]": "200", "DIAL [s]": "0,12", "Curva": "IEC - VI"},
+        {"Parámetro": "ANSI 50", "Pick Up [Aprim]": "-", "DIAL [s]": "-", "Curva": "DT"},
+        {"Parámetro": "ANSI 51N", "Pick Up [Aprim]": "100", "DIAL [s]": "0,19", "Curva": "IEC - VI"},
+        {"Parámetro": "ANSI 50N", "Pick Up [Aprim]": "-", "DIAL [s]": "-", "Curva": "DT"},
+    ])
+
     incluir_tabla_cambio_cab = False
     incluir_tabla_cambio_cto = False
-    df_cambio_cab = pd.DataFrame()
-    df_cambio_cto = pd.DataFrame()
+    df_cambio_cab = df_cambio_cab_default.copy()
+    df_cambio_cto = df_cambio_cto_default.copy()
     cambios_or_extra = []
     nota_disparo_transferido = ""
 
@@ -380,7 +452,7 @@ def render():
             key=f"txt_conc_con_cambio_{ver}"
         )
         st.caption(
-            "💡 Si escribes un asterisco `*` al inicio de cualquier valor en las columnas Propuestas (por ejemplo `*2000` o `*0,12`), "
+            "💡 Si escribes un asterisco `*` al inicio de cualquier valor (por ejemplo `*190` o `*0,05`), "
             "esa celda se resaltará en **amarillo** en el PDF (`\\cellcolor{yellow}`)."
         )
 
@@ -398,31 +470,19 @@ def render():
                 key=f"chk_cambio_cto_{ver}"
             )
 
-        df_cambio_cab_default = pd.DataFrame([
-            {"Parámetro": "ANSI 51", "Pick Up Actual": "150", "Dial Actual": "0,1", "Curva Actual": "IEC - NI", "Pick Up Propuesto": "150", "Dial Propuesto": "0,1", "Curva Propuesta": "IEC - NI"},
-            {"Parámetro": "ANSI 50", "Pick Up Actual": "450", "Dial Actual": "0", "Curva Actual": "DT", "Pick Up Propuesto": "*2000", "Dial Propuesto": "0", "Curva Propuesta": "DT"},
-            {"Parámetro": "ANSI 51N", "Pick Up Actual": "30", "Dial Actual": "0,1", "Curva Actual": "IEC - NI", "Pick Up Propuesto": "30", "Dial Propuesto": "0,1", "Curva Propuesta": "IEC - NI"},
-            {"Parámetro": "ANSI 50N", "Pick Up Actual": "360", "Dial Actual": "0", "Curva Actual": "DT", "Pick Up Propuesto": "*1850", "Dial Propuesto": "0", "Curva Propuesta": "DT"},
-        ])
         if incluir_tabla_cambio_cab:
             st.markdown("#### Tabla `tab:cambioAjustescabecera` (Propuesta para Reconectador `\\recocabecera`)")
             df_cambio_cab = editor_tabla_seguro(
                 obtener_df("df_cambio_cab", df_cambio_cab_default),
-                key=f"ed_cambio_cab_{ver}",
+                key=f"ed_cambio_cab_4col_{ver}",
                 num_rows="dynamic"
             )
 
-        df_cambio_cto_default = pd.DataFrame([
-            {"Parámetro": "ANSI 51", "Pick Up Actual": "200", "Dial Actual": "0,1", "Curva Actual": "IEC - VI", "Pick Up Propuesto": "200", "Dial Propuesto": "*0,12", "Curva Propuesta": "IEC - VI"},
-            {"Parámetro": "ANSI 50", "Pick Up Actual": "-", "Dial Actual": "-", "Curva Actual": "DT", "Pick Up Propuesto": "-", "Dial Propuesto": "-", "Curva Propuesta": "DT"},
-            {"Parámetro": "ANSI 51N", "Pick Up Actual": "100", "Dial Actual": "0,19", "Curva Actual": "IEC - VI", "Pick Up Propuesto": "100", "Dial Propuesto": "0.19", "Curva Propuesta": "IEC - VI"},
-            {"Parámetro": "ANSI 50N", "Pick Up Actual": "-", "Dial Actual": "-", "Curva Actual": "DT", "Pick Up Propuesto": "-", "Dial Propuesto": "-", "Curva Propuesta": "DT"},
-        ])
         if incluir_tabla_cambio_cto:
             st.markdown("#### Tabla `tab:cambioAjustes` (Propuesta para Reconectador `\\recoCTO`)")
             df_cambio_cto = editor_tabla_seguro(
                 obtener_df("df_cambio_cto", df_cambio_cto_default),
-                key=f"ed_cambio_cto_{ver}",
+                key=f"ed_cambio_cto_4col_{ver}",
                 num_rows="dynamic"
             )
 
@@ -461,19 +521,25 @@ def render():
                 key=f"nom_cambio_or_extra_{num_c}_{ver}"
             )
             df_cambio_extra_def = pd.DataFrame([
-                {"Parámetro": "ANSI 51", "Pick Up Actual": "100", "Dial Actual": "0,1", "Curva Actual": "IEC - NI", "Pick Up Propuesto": "100", "Dial Propuesto": "*0,15", "Curva Propuesta": "IEC - NI"},
-                {"Parámetro": "ANSI 50", "Pick Up Actual": "200", "Dial Actual": "0,05", "Curva Actual": "DT", "Pick Up Propuesto": "*350", "Dial Propuesto": "0,05", "Curva Propuesta": "DT"},
-                {"Parámetro": "ANSI 51N", "Pick Up Actual": "40", "Dial Actual": "0,1", "Curva Actual": "IEC - NI", "Pick Up Propuesto": "40", "Dial Propuesto": "*0,15", "Curva Propuesta": "IEC - NI"},
-                {"Parámetro": "ANSI 50N", "Pick Up Actual": "120", "Dial Actual": "0,05", "Curva Actual": "DT", "Pick Up Propuesto": "120", "Dial Propuesto": "0,05", "Curva Propuesta": "DT"},
+                {"Parámetro": "ANSI 51", "Pick Up [Aprim]": "46", "DIAL [s]": "0,05", "Curva": "IEC - NI"},
+                {"Parámetro": "ANSI 50", "Pick Up [Aprim]": "190", "DIAL [s]": "0", "Curva": "DT"},
+                {"Parámetro": "ANSI 51N", "Pick Up [Aprim]": "16", "DIAL [s]": "0,05", "Curva": "IEC - NI"},
+                {"Parámetro": "ANSI 50N", "Pick Up [Aprim]": "240", "DIAL [s]": "0", "Curva": "DT"},
             ])
-            if isinstance(item_c_prev, dict) and "df" in item_c_prev:
-                df_c_init = pd.DataFrame(item_c_prev["df"]) if isinstance(item_c_prev["df"], list) else item_c_prev["df"]
+            if isinstance(item_c_prev, dict) and "df" in item_c_prev and item_c_prev["df"] is not None:
+                raw_df = item_c_prev["df"]
+                if isinstance(raw_df, list) and len(raw_df) > 0:
+                    df_c_init = pd.DataFrame(raw_df)
+                elif isinstance(raw_df, pd.DataFrame) and not raw_df.empty:
+                    df_c_init = raw_df
+                else:
+                    df_c_init = df_cambio_extra_def.copy()
             else:
-                df_c_init = df_cambio_extra_def
+                df_c_init = df_cambio_extra_def.copy()
 
             df_cambio_extra = editor_tabla_seguro(
                 df_c_init,
-                key=f"ed_cambio_or_extra_{num_c}_{ver}",
+                key=f"ed_cambio_or_extra_4col_{num_c}_{ver}",
                 num_rows="dynamic"
             )
             cambios_or_extra.append({
@@ -490,6 +556,11 @@ def render():
         )
 
     datos = {
+        "usar_imagen_ajustes_or": usar_imagen_ajustes_or,
+        "archivo_img_ajustes_or": "AjustesEquiposOR.png",
+        "caption_img_ajustes_or": caption_img_ajustes_or,
+        "label_img_ajustes_or": "tab:ajustesEquiposOR",
+        "texto_intro_sobrecorriente": texto_intro_sobrecorriente,
         "incluir_reco_cabecera": incluir_reco_cabecera,
         "incluir_reco_cto": incluir_reco_cto,
         "df_reco_cabecera": df_reco_cabecera,
