@@ -119,8 +119,17 @@ def render():
         r"Dado lo anterior, los ajustes de la función 59N es \ajustetresVcero\ de arranque con tiempo definido de 2 segundos."
     )
 
+    texto_59n_solo_default = (
+        r"El ajuste de la función de sobretensión residual (ANSI 59N) para el proyecto se define para detectar "
+        r"desplazamientos del neutro ante fallas monofásicas a tierra en el sistema de media tensión. "
+        r"Se establece un umbral de arranque ajustado a \ajustetresVcero\ con una temporización de tiempo definido de 2.0 segundos, "
+        r"garantizando la selectividad y coordinación con las protecciones de respaldo del circuito sin operar ante desbalances normales del sistema."
+    )
+
     if not incluir_sec_59n:
         st.info("🚫 La sección 1.3 (Cálculos para la protección 59N) está desactivada y se omitirá del documento PDF y de la tabla de contenido.")
+        solo_texto_59n = False
+        texto_59n_solo = obtener_val("texto_59n_solo", texto_59n_solo_default)
         df_tres_vcero = obtener_df("df_tres_vcero", df_3v0_default)
         tres_vcero_mas_alta = obtener_val("tresVceroMASALTA", "0.373 p.u.")
         tres_vcero_mas_alta_kv = obtener_val("tresVceroMASALTAkV", "2.842 kV")
@@ -129,32 +138,55 @@ def render():
         tension_base_fn = obtener_val("tension_base_fn", "7.621 kV")
         texto_59n = obtener_val("texto_59n", texto_59n_default)
     else:
-        st.caption("Edita los valores de la tabla de tensión residual 3V0 y las variables enlazadas en el párrafo de análisis:")
-
-        df_tres_vcero = editor_tabla_seguro(
-            obtener_df("df_tres_vcero", df_3v0_default),
-            num_rows="dynamic",
-            key=f"editor_3v0_eacp_{ver}"
+        solo_texto_59n = st.checkbox(
+            "📝 Solo especificar un texto para definir la función 59N (sin tabla de simulaciones 3V0)",
+            value=bool(obtener_val("solo_texto_59n", False)),
+            key=f"chk_solo_txt_59n_{ver}"
         )
 
-        c_v1, c_v2, c_v3, c_v4, c_v5 = st.columns(5)
-        with c_v1:
-            tres_vcero_mas_alta = st.text_input("\\tresVceroMASALTA (15 ohms p.u.):", value=obtener_val("tresVceroMASALTA", "0.373 p.u."), key=f"v_3v0a_{ver}")
-        with c_v2:
-            tres_vcero_mas_alta_kv = st.text_input("\\tresVceroMASALTAkV (15 ohms kV):", value=obtener_val("tresVceroMASALTAkV", "2.842 kV"), key=f"v_3v0kv_{ver}")
-        with c_v3:
-            ajuste_tres_vcero = st.text_input("\\ajustetresVcero (Umbral p.u.):", value=obtener_val("ajustetresVcero", "0.2 p.u"), key=f"v_aj3v0_{ver}")
-        with c_v4:
-            mag_ajuste_tres_vcero = st.text_input("\\magajustetresVcero (Umbral kV):", value=obtener_val("magajustetresVcero", "1.524 kV"), key=f"v_mag3v0_{ver}")
-        with c_v5:
-            tension_base_fn = st.text_input("Tensión base fase-neutro:", value=obtener_val("tension_base_fn", "7.621 kV"), key=f"v_tbfn_{ver}")
+        if solo_texto_59n:
+            st.info("ℹ️ Modo activo: Se omite la tabla de simulación de tensión residual 3V0 y únicamente se incluirá en el informe el texto que define los ajustes y criterios de la función 59N.")
+            texto_59n_solo = st.text_area(
+                "Texto para definir la función 59N (puedes conservar `\\ajustetresVcero` u otros comandos):",
+                value=obtener_val("texto_59n_solo", texto_59n_solo_default),
+                height=150,
+                key=f"txt_59n_solo_{ver}"
+            )
+            df_tres_vcero = obtener_df("df_tres_vcero", df_3v0_default)
+            tres_vcero_mas_alta = obtener_val("tresVceroMASALTA", "0.373 p.u.")
+            tres_vcero_mas_alta_kv = obtener_val("tresVceroMASALTAkV", "2.842 kV")
+            ajuste_tres_vcero = obtener_val("ajustetresVcero", "0.2 p.u")
+            mag_ajuste_tres_vcero = obtener_val("magajustetresVcero", "1.524 kV")
+            tension_base_fn = obtener_val("tension_base_fn", "7.621 kV")
+            texto_59n = obtener_val("texto_59n", texto_59n_default)
+        else:
+            texto_59n_solo = obtener_val("texto_59n_solo", texto_59n_solo_default)
+            st.caption("Edita los valores de la tabla de tensión residual 3V0 y las variables enlazadas en el párrafo de análisis:")
 
-        texto_59n = st.text_area(
-            "Párrafo de análisis de 59N (conserva `\\NT`, `\\tresVceroMASALTA`, `\\ajustetresVcero`, etc.):",
-            value=obtener_val("texto_59n", texto_59n_default),
-            height=200,
-            key=f"txt_59n_{ver}"
-        )
+            df_tres_vcero = editor_tabla_seguro(
+                obtener_df("df_tres_vcero", df_3v0_default),
+                num_rows="dynamic",
+                key=f"editor_3v0_eacp_{ver}"
+            )
+
+            c_v1, c_v2, c_v3, c_v4, c_v5 = st.columns(5)
+            with c_v1:
+                tres_vcero_mas_alta = st.text_input("\\tresVceroMASALTA (15 ohms p.u.):", value=obtener_val("tresVceroMASALTA", "0.373 p.u."), key=f"v_3v0a_{ver}")
+            with c_v2:
+                tres_vcero_mas_alta_kv = st.text_input("\\tresVceroMASALTAkV (15 ohms kV):", value=obtener_val("tresVceroMASALTAkV", "2.842 kV"), key=f"v_3v0kv_{ver}")
+            with c_v3:
+                ajuste_tres_vcero = st.text_input("\\ajustetresVcero (Umbral p.u.):", value=obtener_val("ajustetresVcero", "0.2 p.u"), key=f"v_aj3v0_{ver}")
+            with c_v4:
+                mag_ajuste_tres_vcero = st.text_input("\\magajustetresVcero (Umbral kV):", value=obtener_val("magajustetresVcero", "1.524 kV"), key=f"v_mag3v0_{ver}")
+            with c_v5:
+                tension_base_fn = st.text_input("Tensión base fase-neutro:", value=obtener_val("tension_base_fn", "7.621 kV"), key=f"v_tbfn_{ver}")
+
+            texto_59n = st.text_area(
+                "Párrafo de análisis de 59N (conserva `\\NT`, `\\tresVceroMASALTA`, `\\ajustetresVcero`, etc.):",
+                value=obtener_val("texto_59n", texto_59n_default),
+                height=200,
+                key=f"txt_59n_{ver}"
+            )
 
     # ================= 1.4 PROTECCIÓN ANTI-ISLA =================
     st.markdown("---")
@@ -239,6 +271,8 @@ def render():
     datos = {
         "incluir_img_2759": incluir_img_2759,
         "incluir_sec_59n": incluir_sec_59n,
+        "solo_texto_59n": solo_texto_59n,
+        "texto_59n_solo": texto_59n_solo,
         "proteccion_tensiones_txt": proteccion_tensiones_txt,
         "df_tres_vcero": df_tres_vcero,
         "tresVceroMASALTA": tres_vcero_mas_alta,
