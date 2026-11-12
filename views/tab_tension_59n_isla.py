@@ -26,16 +26,26 @@ def render():
     # ================= 1.2 PROTECCIONES 27 Y 59 =================
     st.markdown("### 1.2 Cálculos para las protecciones 27 y 59 (`\\protecciontensiones`)")
     modo_27_59 = st.radio(
-        "Selecciona la plantilla para `\\protecciontensiones`:",
+        "Selecciona el formato / plantilla para las protecciones 27 y 59:",
         [
             "Plantilla EPM / CEO (2 segundos para etapa 1 y 1.5 segundos para etapa 2)",
-            "Plantilla EBSA (3 segundos para etapa 1 y 1.5 segundos para etapa 2)"
+            "Plantilla EBSA (3 segundos para etapa 1 y 1.5 segundos para etapa 2)",
+            "Formato CELSIA (Texto personalizado y carga de imagen de ajustes suministrados por el OR)",
         ],
-        index=0,
+        index=2 if "celsia" in str(obtener_val("modo_27_59", "")).lower() or bool(obtener_val("es_formato_celsia_27", False))
+              else (1 if "ebsa" in str(obtener_val("modo_27_59", "")).lower() else 0),
         key=f"rad_2759_{ver}"
     )
 
-    if modo_27_59.startswith("Plantilla EPM"):
+    es_formato_celsia_27 = ("CELSIA" in modo_27_59)
+
+    if es_formato_celsia_27:
+        txt_27_59_default = (
+            r"Para la protección de baja tensión (ANSI 27), el Operador de Red CELSIA suministró los ajustes requeridos para la conexión del proyecto. "
+            r"En la \cref{fig:ajustes27Celsia} se presentan los ajustes suministrados por el OR. Asimismo, se verifica que dichos tiempos no intervienen "
+            r"con la correcta actuación de las curvas LVRT y HVRT de los inversores mostradas en la \cref{fig:proteccion27-59}."
+        )
+    elif modo_27_59.startswith("Plantilla EPM"):
         txt_27_59_default = (
             r"Dado que en el CNO no se indican los valores de tiempo para las protecciones etapa 1 y 2 de la protección 27, "
             r"y que estos valores deben ser acordados con el operador de red, se propondrán los siguientes valores que garantizan "
@@ -54,10 +64,37 @@ def render():
             r"con alguna función de sobretensión implementada en sus redes de distribución."
         )
 
+    if es_formato_celsia_27:
+        st.info("⚡ **Formato CELSIA activo:** Especifica el texto explicativo para la protección 27 y carga la imagen con los ajustes suministrados por el OR.")
+
+        col_cel1, col_cel2 = st.columns([2, 1])
+        with col_cel1:
+            up_celsia = st.file_uploader(
+                f"Cargar imagen con ajustes suministrados por el OR ({estado_archivo('Ajustes27Celsia.png')}):",
+                type=["png", "jpg", "jpeg"],
+                key=f"up_img_celsia_27_{ver}"
+            )
+            if guardar_archivo_subido(up_celsia, "Ajustes27Celsia.png"):
+                st.success("✅ Imagen 'Ajustes27Celsia.png' guardada correctamente.")
+        with col_cel2:
+            caption_img_27_celsia = st.text_input(
+                "Título / Leyenda de la figura (`fig:ajustes27Celsia`):",
+                value=obtener_val("caption_img_27_celsia", "Ajustes de protección ANSI 27 suministrados por el OR (CELSIA)"),
+                key=f"cap_img_celsia_{ver}"
+            )
+
+        if os.path.exists("Ajustes27Celsia.png"):
+            with st.expander("👁️ Vista previa de la imagen de ajustes CELSIA", expanded=True):
+                st.image("Ajustes27Celsia.png", caption=caption_img_27_celsia, use_container_width=True)
+        else:
+            st.warning("⚠️ Imagen 'Ajustes27Celsia.png' pendiente por cargar. En la compilación de LaTeX se mostrará un recuadro indicativo.")
+    else:
+        caption_img_27_celsia = obtener_val("caption_img_27_celsia", "Ajustes de protección ANSI 27 suministrados por el OR (CELSIA)")
+
     proteccion_tensiones_txt = st.text_area(
-        "Texto de `\\protecciontensiones` (conserva `\\cref{fig:proteccion27-59}`):",
+        "Texto de `\\protecciontensiones` (conserva referencias cruzadas como `\\cref{fig:ajustes27Celsia}` y `\\cref{fig:proteccion27-59}`):",
         value=obtener_val("proteccion_tensiones_txt", txt_27_59_default),
-        height=120,
+        height=130,
         key=f"txt_2759_{ver}"
     )
 
@@ -269,6 +306,9 @@ def render():
     )
 
     datos = {
+        "modo_27_59": modo_27_59,
+        "es_formato_celsia_27": es_formato_celsia_27,
+        "caption_img_27_celsia": caption_img_27_celsia,
         "incluir_img_2759": incluir_img_2759,
         "incluir_sec_59n": incluir_sec_59n,
         "solo_texto_59n": solo_texto_59n,
